@@ -90,6 +90,7 @@ function createWidgetArtifactRoot() {
   for (const filePath of [paths.entitlements, paths.extensionExecutable, paths.config, paths.reloader, paths.extensionEntitlements, paths.reloaderEntitlements]) {
     fs.writeFileSync(filePath, 'test');
   }
+  fs.writeFileSync(paths.config, JSON.stringify({ marketingVersion: '1.2.3', bundleVersion: '1.2.3' }));
   return artifactRoot;
 }
 
@@ -891,6 +892,22 @@ test('keeps marketing and bundle versions numeric across release channels', () =
       marketingVersion: '1.2.3',
       bundleVersion: '1.2.3'
     });
+  }
+});
+
+test('Widget packaging aligns host plist versions with staged numeric versions for prereleases', () => {
+  const artifactRoot = createWidgetArtifactRoot();
+  try {
+    const config = createBuilderConfig({
+      baseConfig: { ...packageJson.build, extraMetadata: { version: '1.2.3-rust.1' } },
+      env: { TOKEN_MONITOR_WIDGET_ENABLED: '1' },
+      root: artifactRoot
+    });
+    assert.equal(config.mac.bundleShortVersion, '1.2.3');
+    assert.equal(config.mac.bundleVersion, '1.2.3');
+    assert.equal(config.extraMetadata.version, '1.2.3-rust.1');
+  } finally {
+    fs.rmSync(artifactRoot, { recursive: true, force: true });
   }
 });
 

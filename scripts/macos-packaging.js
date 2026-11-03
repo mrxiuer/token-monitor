@@ -100,7 +100,14 @@ function widgetMacBuildConfig(baseMac = {}, options = {}) {
     throw new Error(`Widget packaging owns ${conflictingKeys.join(' and ')}; compose the existing macOS configuration explicitly instead of replacing it.`);
   }
 
-  assertWidgetArtifacts(root, { env });
+  const artifacts = assertWidgetArtifacts(root, { env });
+  // Bundle versions must be numeric even when the npm version is a prerelease.
+  // The staged Widget config is authoritative for both host plist fields.
+  const widgetConfig = JSON.parse(fs.readFileSync(artifacts.config, 'utf8'));
+  if (!/^\d+\.\d+(?:\.\d+)?$/.test(String(widgetConfig.marketingVersion || ''))
+    || !/^\d+(?:\.\d+){0,2}$/.test(String(widgetConfig.bundleVersion || ''))) {
+    throw new Error('Widget artifacts have invalid numeric versions. Run npm run build:mac-widget first.');
+  }
   const localDevelopmentSigning = String(env.TOKEN_MONITOR_LOCAL_DEVELOPMENT_SIGNING || '').trim() === '1';
   const appGroup = String(env.TOKEN_MONITOR_APP_GROUP || 'group.com.example.tokenmonitor').trim();
   const extraFiles = Array.isArray(base.extraFiles)
@@ -111,6 +118,8 @@ function widgetMacBuildConfig(baseMac = {}, options = {}) {
     : (base.extraResources === undefined ? [] : [base.extraResources]);
   return {
     ...base,
+    bundleShortVersion: widgetConfig.marketingVersion,
+    bundleVersion: widgetConfig.bundleVersion,
     ...(localDevelopmentSigning ? { identity: localWidgetSigningIdentity(env, appGroup) } : {}),
     entitlements: 'build/macos-widget/TokenMonitor.entitlements',
     sign: 'scripts/sign-macos-with-widget.js',
