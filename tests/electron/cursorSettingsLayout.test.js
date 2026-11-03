@@ -2063,6 +2063,9 @@ function fakeHubControl(value = '') {
 }
 
 function loadHubSettingsWiring(els, context) {
+  els.duoUsernameInput ||= fakeHubControl('Owner');
+  els.duoDeviceNameInput ||= fakeHubControl('');
+  if (context.state?.settings) context.state.settings.duoUsername ||= 'Owner';
   for (const id of ['syncConnectionEditor', 'syncConnectionIdentity', 'syncConnectionEndpoint', 'syncConnectionEdit', 'syncConnectionCancel', 'syncConnectionSaveError', 'syncDeviceSettings', 'syncUploadIntervalRow']) {
     els[id] ||= fakeHubControl();
   }
@@ -2118,6 +2121,8 @@ test('Hub Save disables for clean and reverted drafts', async () => {
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2174,6 +2179,8 @@ test('Hub Save exposes busy state and ignores repeated clicks', async () => {
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2209,6 +2216,8 @@ test('Hub Save exposes busy state and ignores repeated clicks', async () => {
   assert.equal(els.saveSettingsButton.getAttribute('aria-busy'), 'true');
   await els.saveSettingsButton.dispatch('click');
   assert.deepEqual(patches, [{
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: 'https://draft.example',
     secret: 'saved-secret',
     deviceId: 'saved-device'
@@ -2232,6 +2241,8 @@ test('Hub Save re-enables a failed draft after clearing busy state', async () =>
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2279,6 +2290,8 @@ test('Hub Save compares Host Hub ports with main-process normalization', async (
       hubMode: 'host',
       hubHostPort: 17321,
       hubHostSecret: 'host-secret',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: '',
       secret: '',
       deviceId: 'saved-device',
@@ -2337,6 +2350,8 @@ test('Host Hub invalid ports preserve the persisted port when another field save
       hubMode: 'host',
       hubHostPort: 18000,
       hubHostSecret: 'host-secret',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: '',
       secret: '',
       deviceId: 'saved-device',
@@ -2367,6 +2382,8 @@ test('Host Hub invalid ports preserve the persisted port when another field save
   await els.saveSettingsButton.dispatch('click');
 
   assert.deepEqual(patches, [{
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: '',
     secret: '',
     deviceId: 'draft-device',
@@ -2394,6 +2411,8 @@ test('changing sync upload frequency auto-saves without replacing Hub drafts', a
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2434,6 +2453,8 @@ test('changing sync upload frequency auto-saves without replacing Hub drafts', a
   assert.deepEqual(patches, [{
     syncUploadIntervalMs: 1200000
   }, {
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: 'https://draft.example',
     secret: 'draft-secret',
     deviceId: 'draft-device'
@@ -2455,6 +2476,8 @@ test('Hub Save keeps edits made while persistence is in flight', async () => {
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2497,6 +2520,8 @@ test('Hub Save keeps edits made while persistence is in flight', async () => {
   await savePromise;
 
   assert.deepEqual(patches, [{
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: 'https://draft-a.example',
     secret: 'draft-secret',
     deviceId: 'draft-device'
@@ -2520,6 +2545,8 @@ test('Hub Save keeps an in-flight edit even when it returns to the persisted val
   const state = {
     settings: {
       hubMode: 'client',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: 'https://saved.example',
       secret: 'saved-secret',
       deviceId: 'saved-device',
@@ -2580,6 +2607,8 @@ test('Host Hub port draft survives settings rehydration and saves with Hub field
       hubMode: 'host',
       hubHostPort: 17321,
       hubHostSecret: 'host-secret',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: '',
       secret: '',
       deviceId: 'saved-device',
@@ -2612,6 +2641,8 @@ test('Host Hub port draft survives settings rehydration and saves with Hub field
 
   await els.saveSettingsButton.dispatch('click');
   assert.deepEqual(patches, [{
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: '',
     secret: '',
     deviceId: 'saved-device',
@@ -2640,6 +2671,8 @@ test('Host Hub port draft survives leaving and returning to Host mode', async ()
       hubMode: 'host',
       hubHostPort: 17321,
       hubHostSecret: 'host-secret',
+      duoDeviceName: '',
+      duoUsername: 'Owner',
       hubUrl: '',
       secret: '',
       deviceId: 'saved-device',
@@ -2682,6 +2715,8 @@ test('Host Hub port draft survives leaving and returning to Host mode', async ()
 
   await els.saveSettingsButton.dispatch('click');
   assert.deepEqual(patches, [{
+    duoDeviceName: '',
+    duoUsername: 'Owner',
     hubUrl: '',
     secret: '',
     deviceId: 'saved-device',

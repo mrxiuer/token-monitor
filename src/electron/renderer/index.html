@@ -6,6 +6,7 @@
     <title>Token Monitor</title>
     <script src="floatingBubbleBoot.js"></script>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="duo.css" />
     <link rel="stylesheet" href="edgeDock/composer.css" />
     <link rel="stylesheet" href="pluginViews.css" />
   </head>
@@ -21,6 +22,7 @@
           <nav class="tabs" aria-label="Period tabs">
             <span class="tab-indicator" aria-hidden="true"></span>
             <button class="tab active" data-period="today" data-period-slot="today">DAY</button>
+            <button class="tab" data-period="cycle" data-period-slot="cycle">额度周</button>
             <button id="monthPeriodTab" class="tab" data-period="month" data-period-slot="month" aria-haspopup="menu" aria-expanded="false">MONTH</button>
             <button class="tab" data-period="allTime" data-period-slot="allTime">TOTAL</button>
           </nav>
@@ -1556,6 +1558,8 @@
                   </div>
                 </div>
                 <div id="syncConnectionEditor" class="sync-connection-editor">
+                  <label><span>用户名</span><input id="duoUsernameInput" type="text" maxlength="40" placeholder="同名设备会自动归为同一成员" autocomplete="nickname" /></label>
+                  <label><span>设备显示名称</span><input id="duoDeviceNameInput" type="text" maxlength="40" placeholder="例如 MacBook、家里的电脑" /></label>
                   <label><span data-i18n="settings.sync.hubUrl">Hub URL</span><input id="hubUrlInput" type="text" spellcheck="false" placeholder="http://hub-host:17321" /></label>
                   <div class="settings-field hub-secret-field">
                     <label for="secretInput" data-i18n="settings.sync.secret">Secret</label>
@@ -1669,6 +1673,7 @@
         </button>
       </div>
 
+      <section id="duoPanel" class="duo-panel" hidden></section>
       <section id="fixedPeriodMessage" class="fixed-period-message hidden" role="status" aria-live="polite"></section>
 
       <section id="pluginMainPanel" class="plugin-main-panel hidden"></section>
@@ -1857,6 +1862,8 @@
     <script src="displaySettings.js"></script>
     <script src="displaySettingsPreview.js"></script>
     <script src="contentBlur.js"></script>
+    <script src="../../shared/duo.js"></script>
+    <script src="duoView.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

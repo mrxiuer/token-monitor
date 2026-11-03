@@ -22,6 +22,36 @@ The Node hub is header-only. The Cloudflare Worker still accepts `?secret=` as a
 
 During Node Hub shutdown, new requests are rejected with `503`, `{ "error": "hub_stopping" }` and `Connection: close`, including requests completed on previously connected sockets. A client still sending a request body may instead observe a closed or reset connection before it receives the response. Already-admitted uploads can finish during the drain period; remaining HTTP connections are force-closed after a five-second timer target. Pending usage is saved before and after draining. This lifecycle response does not apply to the Cloudflare Worker.
 
+## Duo members and quota cycles
+
+The personal Codex edition extends the **Node Hub** with authenticated `GET /api/duo` and `PUT /api/duo`. The existing shared Hub secret authorizes every member operation; usernames are grouping labels, not separate accounts or access controls. Worker and iCloud adapters do not implement these configuration endpoints.
+
+Ingest accepts optional `username`, `displayName` and `quotaPeriods`. A nonempty normalized username joins or creates a stable member ID and binds the Device ID to it. Subsequent uploads may omit the username; changing a member name does not change its ID. The Hub's binding is authoritative over uploaded `memberId`/`memberName`. Authenticated stats include decorated device membership and a `duo` configuration snapshot. The ingest response adds `member: { id, name }` for registered devices; legacy unregistered responses remain compatible.
+
+`quotaPeriods` is an array of up to 104 summaries with ISO `start`/`end`, `id` equal to `${Date.parse(start)}:${Date.parse(end)}`, nonnegative numeric `totalTokens`, `costUsd`, `inputTokens` (exclusive of cache), `outputTokens` (inclusive of reasoning), `cacheReadTokens`, `unpricedTokens`, `missingSources`, ISO `updatedAt`, and `status: "complete" | "partial"`. Unknown fields are dropped. A missing array preserves the previous observation; an explicit zero summary corrects the prior value. Records are exact cycle summaries, not increments to add at ingest.
+
+`GET /api/duo` returns `{ version: 1, members, bindings, cycles, cycle, source, manual }`. `members` contains stable `{ id, name }` entries, `bindings` maps Device IDs to member IDs, and `source` is a pinned `{ deviceId, accountKey }` for Codex Pro. Automatic cycles use the reported primary weekly window, remain pending when no valid next window is available, and retain the latest 104 known ranges. Each range is half-open `[start, end)`.
+
+`PUT /api/duo` accepts exactly one operation and returns the resulting snapshot. Invalid operations return HTTP 400 without persisting partial changes:
+
+```json
+{ "assign": { "deviceId": "macbook", "username": "Owner" } }
+```
+
+```json
+{ "rename": { "id": "member-uuid", "name": "New nickname" } }
+```
+
+```json
+{ "source": { "deviceId": "macbook", "accountKey": "reported-pro-account-key" } }
+```
+
+```json
+{ "manual": { "start": "2026-11-01T12:00:00Z", "end": "2026-11-08T12:00:00Z" } }
+```
+
+Assign requires an existing device; rename rejects an already-used normalized name; source must already be reported as Codex Pro. Manual ranges must be positive and at most 32 days. Selecting a source exits manual mode. Configuration writes persist before broadcasting a complete SSE snapshot. See [the edition guide](duo.md) for observed-only coverage and pricing limitations.
+
 ## `GET /api/health`
 
 Health check. Does not require authentication.

@@ -76,7 +76,7 @@ test('sync endpoint reuses hover reading and preserves its wrapper across settin
     'syncConnectionCancel', 'syncConnectionIdentity', 'syncUploadIntervalRow', 'syncConnectionSaveError']
     .map(id => [id, control()]));
   els.syncConnectionEndpoint = endpoint;
-  const state = { settings: { hubMode: 'client', hubUrl: 'https://user:password@long-host.example:8443/private?secret=hidden#token' } };
+  const state = { settings: { duoUsername: 'Owner', hubMode: 'client', hubUrl: 'https://user:password@long-host.example:8443/private?secret=hidden#token' } };
   const app = fs.readFileSync(path.join(__dirname, '../../src/electron/renderer/app.js'), 'utf8');
   const setup = app.slice(app.indexOf('const overflowText ='), app.indexOf('// Two clicks to remove from sync settings'));
   const ui = app.slice(app.indexOf('function syncHubConnectionUi('), app.indexOf('function beginClientConnectionEdit('));

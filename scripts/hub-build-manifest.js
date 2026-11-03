@@ -17,6 +17,7 @@ const WORKER_SHARED_MODULES = Object.freeze([
   'limits/core.js',
   'providers/workbuddy/identity.js',
   'usage.js',
+  'duo.js',
   'sessionLive.js',
   'sessionActivityProviders.js',
   'history.js',
@@ -43,6 +44,7 @@ const WORKER_SHARED_PACKAGE = Object.freeze({
 const CORE_SOURCE_FILES = WORKER_SHARED_MODULES.map((name) => `src/shared/${name}`);
 const NODE_RUNTIME_SOURCE_FILES = Object.freeze([
   'src/hub/server.js',
+  'src/shared/duoHub.js',
   'src/shared/http.js',
   'src/shared/config.js'
 ]);

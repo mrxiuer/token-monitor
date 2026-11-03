@@ -5,6 +5,7 @@ const { filterReasonixSyntheticSessions } = require('../providers/reasonix/sessi
 const { applyActivityPatch, materializeActivity } = require('../sessionActivityProjection');
 
 const PARTIAL_USAGE_CARRY_FIELDS = Object.freeze([
+  'quotaPeriods',
   'month',
   'allTime',
   'clientStatus',

@@ -30,7 +30,7 @@ function configuredUpdater({ platform = 'win32', isPackaged = true, env = {}, ex
 }
 
 for (const directory of ['D:\\Token Monitor', 'C:\\Apps\\测试 空格\\Token Monitor']) {
-  test(`Windows update passes the running directory to the NSIS installer: ${directory}`, () => {
+  test(`manual fork updates do not configure an automatic installation directory: ${directory}`, () => {
     const updater = configuredUpdater({ execPath: `${directory}\\Token Monitor.exe` });
     const spawns = [];
     updater.downloadedUpdateHelper = { file: 'C:\\Update cache\\setup.exe', packageFile: null };
@@ -39,7 +39,7 @@ for (const directory of ['D:\\Token Monitor', 'C:\\Apps\\测试 空格\\Token Mo
     assert.equal(updater.doInstall({ isSilent: true, isForceRunAfter: true, isAdminRightsRequired: false }), true);
     assert.deepEqual(spawns, [{
       file: 'C:\\Update cache\\setup.exe',
-      args: ['--updated', '/S', '--force-run', `/D=${directory}`]
+      args: ['--updated', '/S', '--force-run']
     }]);
   });
 }

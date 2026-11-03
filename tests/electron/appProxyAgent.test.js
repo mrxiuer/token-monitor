@@ -134,6 +134,8 @@ function listen(server, host) {
 async function startProxy(t, tunnels = {}) {
   const connects = [];
   const proxy = http.createServer((req, res) => res.writeHead(400).end());
+  const sockets = new Set();
+  proxy.on('connection', (socket) => { sockets.add(socket); socket.once('close', () => sockets.delete(socket)); });
   proxy.on('connect', (req, socket) => {
     connects.push(req.url);
     const port = tunnels[req.url];
@@ -149,7 +151,10 @@ async function startProxy(t, tunnels = {}) {
     upstream.on('error', () => socket.destroy());
   });
   const port = await listen(proxy, '127.0.0.1');
-  t.after(() => proxy.close());
+  t.after(() => {
+    for (const socket of sockets) socket.destroy();
+    return new Promise((resolve) => proxy.close(resolve));
+  });
   return { url: `http://127.0.0.1:${port}`, connects };
 }
 

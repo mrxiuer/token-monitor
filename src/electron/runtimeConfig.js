@@ -23,10 +23,12 @@ const MODE_STRUCTURAL_KEYS = Object.freeze([
   'secret',
   'hubHostPort',
   'hubHostSecret',
-  'deviceId'
+  'deviceId',
+  'duoUsername'
 ]);
 const USAGE_STRUCTURAL_KEYS = Object.freeze([
   'clients',
+  'duoCycles',
   'codexDotsEnabled',
   'customScanPaths',
   'allTimeSince',
@@ -42,6 +44,7 @@ const USAGE_STRUCTURAL_KEYS = Object.freeze([
 // whether replacing the active usage runtime would change its collection work.
 // Values arrive from usageConfigFromSettings() after mode-specific normalization.
 const USAGE_CONFIG_FINGERPRINT_KEYS = Object.freeze([
+  'duoCycles',
   'clients',
   'codexDotsEnabled',
   'customScanPaths',
@@ -95,6 +98,8 @@ function normalizeAllTimeSince(value, fallback = DEFAULT_ALL_TIME_SINCE) {
 
 function usageConfigFromSettings(settings = {}, context = {}) {
   return {
+    duoEnabled: true,
+    duoCycles: settings.duoCycles || [],
     clients: clientsCsvForSetting(settings.clients),
     codexDotsEnabled: settings.codexDotsEnabled === true,
     codexDotsVisible: settings.codexDotsVisible !== false,
@@ -215,6 +220,7 @@ function diagnosticConfigurationFromSettings(settings = {}, context = {}) {
 function envelopeFromSettings(settings = {}, context = {}) {
   return {
     deviceId: settings.deviceId || context.defaultDeviceId,
+    ...(settings.duoUsername ? { username: settings.duoUsername } : {}),
     agentVersion: context.agentVersion,
     agentRuntime: context.agentRuntime || 'electron-widget'
   };

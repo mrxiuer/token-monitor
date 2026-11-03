@@ -308,6 +308,7 @@ contextBridge.exposeInMainWorld('tokenMonitor', {
     }
   },
   minimize: () => ipcRenderer.send('window:minimize'),
+  configureDuo: (payload) => ipcRenderer.invoke('duo:configure', payload),
   close: () => ipcRenderer.send('window:close')
 });
 

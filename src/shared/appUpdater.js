@@ -2,7 +2,7 @@
 
 const semver = require('semver');
 
-const GITHUB_REPO = 'Javis603/token-monitor';
+const GITHUB_REPO = 'mrxiuer/token-monitor';
 const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`;
 const RELEASES_LATEST_URL = `${RELEASES_URL}/latest`;
 const REQUEST_TIMEOUT_MS = 10 * 1000;
@@ -48,8 +48,10 @@ const RELEASE_NOTE_VOID_HTML_TAGS = new Set(['area', 'base', 'br', 'col', 'embed
 function appUpdateInstallSupport({
   isPackaged = false,
   platform = process.platform,
-  env = process.env
+  env = process.env,
+  manualOnly = false
 } = {}) {
+  if (manualOnly) return { supported: false, reason: 'manual-only' };
   if (!isPackaged) return { supported: false, reason: 'unpackaged' };
   if (platform === 'darwin') return { supported: true, reason: '' };
   if (platform === 'win32') {

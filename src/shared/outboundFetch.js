@@ -107,7 +107,9 @@ function createOutboundFetch(env = process.env, deps = {}) {
 
 /** Clear cached ProxyAgents (tests / hot env proxy changes). */
 function resetOutboundFetchCache() {
+  const pending = [...agentCache.values()].map(({ agent }) => agent.destroy?.());
   agentCache.clear();
+  return Promise.allSettled(pending);
 }
 
 module.exports = {

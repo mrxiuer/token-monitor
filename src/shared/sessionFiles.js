@@ -227,4 +227,4 @@ function resolveSessionFile(client, sessionId, home, options = {}) {
   return '';
 }
 
-module.exports = { findSessionFiles, findTimestampedSessionFiles, findCodexSessionFiles, preferredCodexSessionFile, codexSessionFile, resolveSessionFile, isSafeSessionId };
+module.exports = { codexHomeDir, findSessionFiles, findTimestampedSessionFiles, findCodexSessionFiles, preferredCodexSessionFile, codexSessionFile, resolveSessionFile, isSafeSessionId };

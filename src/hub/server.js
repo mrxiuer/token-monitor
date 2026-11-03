@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('node:http');
+const { createDuoHub } = require('../shared/duoHub');
 const path = require('node:path');
 const { URL } = require('node:url');
 const {
@@ -79,6 +80,8 @@ function createHub({
   let stopping = false;
   let stopPromise = null;
 
+  const duoHub = createDuoHub(store, persist);
+
   // Apply the permission at startup, including records from offline devices.
   // Keep disabled policies as tombstones so re-enabling cannot reuse old tokens.
   const beforeCleanup = JSON.stringify([store.devices, store.syncTitlePolicies]);
@@ -120,6 +123,8 @@ function createHub({
   function getStats() {
     const stats = aggregateDevices(Object.values(store.devices), staleAfterMs);
     stats.staleAfterMs = staleAfterMs;
+    stats.duo = duoHub.snapshot();
+    stats.devices = stats.devices.map(duoHub.decorate);
     const history = aggregateHistory(Object.values(store.devices));
     stats.historyPreview = historyPreview(history);
     stats.historyRevision = historyRevision(history);
@@ -138,7 +143,7 @@ function createHub({
   }
 
   function getDevices() {
-    return Object.values(store.devices);
+    return Object.values(store.devices).map(duoHub.decorate);
   }
 
   const sseClients = new Set();
@@ -245,11 +250,20 @@ function createHub({
     const record = mergeSyncDeviceRecord(store.devices[deviceId], { ...payload, receivedAt: new Date().toISOString() }, {
       preserveSessionTitles: acceptsSessionTitles(serverTitlesEnabled, store.syncTitlePolicies[deviceId], payload.sessionTitleSyncGeneration)
     });
+    const previousDevice = store.devices[record.deviceId];
+    const previousDuo = JSON.stringify(store.duo);
     store.devices[record.deviceId] = record;
-    queuePersist();
+    try { duoHub.ingest(record, payload); queuePersist(); } catch (error) {
+      if (previousDevice) store.devices[record.deviceId] = previousDevice;
+      else delete store.devices[record.deviceId];
+      const restored = JSON.parse(previousDuo);
+      for (const key of Object.keys(store.duo)) delete store.duo[key];
+      Object.assign(store.duo, restored);
+      throw error;
+    }
     if (statsListeners.size > 0) notifyStatsListeners('ingest');
     queueStatsBroadcast();
-    return record;
+    return duoHub.decorate(record);
   }
 
   function deleteDevice(deviceId) {
@@ -407,6 +421,12 @@ function createHub({
 
     if (!isAuthorized(req, secret)) return sendJson(res, 401, { error: 'unauthorized' });
 
+    if (req.method === 'GET' && url.pathname === '/api/duo') return sendJson(res, 200, duoHub.snapshot());
+    if (req.method === 'PUT' && url.pathname === '/api/duo') {
+      try { const next = duoHub.configure(await readJsonBody(req)); broadcastStats('duo-configuration'); return sendJson(res, 200, next); }
+      catch (error) { return sendJson(res, 400, { error: 'invalid_duo_configuration', message: error.message }); }
+    }
+
     if (req.method === 'GET' && url.pathname === '/api/sync/content') return sendJson(res, 200, getSyncContent());
 
     const settingsMatch = url.pathname.match(/^\/api\/sync\/settings\/(modelAliases|customPricing)$/);
@@ -490,7 +510,8 @@ function createHub({
       try {
         const payload = await readJsonBody(req);
         const record = ingestRecord(payload);
-        const response = { ok: true, deviceId: record.deviceId };
+        const response = { ok: true, deviceId: record.deviceId,
+          ...(payload.username && record.memberId ? { member: { id: record.memberId, name: record.memberName } } : {}) };
         return sendJson(res, 200, wantsMinimalResponse(req) ? response : { ...response, stats: getStats() });
       } catch (error) {
         if (error.message === 'deviceId_required') return sendJson(res, 400, { error: 'deviceId_required' });

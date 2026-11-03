@@ -21,13 +21,13 @@ function harness(settings = {}, overrides = {}) {
     removeAttribute(name) { delete this[name]; }
   });
   const els = Object.fromEntries([
-    'hubUrlInput', 'secretInput', 'deviceIdInput', 'hubPortInput', 'saveSettingsButton',
+    'hubUrlInput', 'secretInput', 'deviceIdInput', 'duoUsernameInput', 'duoDeviceNameInput', 'hubPortInput', 'saveSettingsButton',
     'syncConnectionEditor', 'syncConnectionIdentity', 'syncConnectionEndpoint', 'syncConnectionEdit',
     'syncConnectionCancel', 'syncConnectionSaveError', 'syncDeviceSettings', 'syncUploadIntervalRow'
   ].map(id => [id, control()]));
   els.syncConnectionEditor.contains = element => [els.hubUrlInput, els.secretInput].includes(element);
   els.syncDeviceSettings.contains = element => [els.deviceIdInput, els.saveSettingsButton, els.syncConnectionCancel].includes(element);
-  const state = { settings: { hubMode: 'client', hubUrl: 'https://saved.example', secret: '', deviceId: 'me', hubHostPort: 17321, ...settings } };
+  const state = { settings: { duoUsername: 'Owner', duoDeviceName: '', hubMode: 'client', hubUrl: 'https://saved.example', secret: '', deviceId: 'me', hubHostPort: 17321, ...settings } };
   const patches = [];
   const context = vm.createContext({
     state, els, document, syncDevicePanelApi: panelApi,

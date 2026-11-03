@@ -744,6 +744,7 @@ function readSessionDetail({ client, sessionId, period = 'total', sessionCost = 
 }
 
 module.exports = {
+  readTranscriptLines,
   parseClaudeTranscript,
   parseCodebuddyTranscript,
   parseCodexTranscript,

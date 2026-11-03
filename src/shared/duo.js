@@ -1,0 +1,76 @@
+'use strict';
+
+(function exposeDuo(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.TokenMonitorDuo = api;
+})(typeof window !== 'undefined' ? window : null, function createDuoApi() {
+  const WEEK_MS = 7 * 86400000;
+  function username(value) {
+    return String(value || '').normalize('NFC').trim().replace(/\s+/gu, ' ').slice(0, 40);
+  }
+  function usernameKey(value) { return username(value).toLowerCase(); }
+  function csvCell(value) {
+    let text = String(value ?? '');
+    if (/^[\s\u0000-\u001f]*[=+\-@]/u.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  function cycle(value) {
+    const start = Date.parse(value?.start || '');
+    const end = Date.parse(value?.end || '');
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end - start > 32 * 86400000) return null;
+    return { id: `${start}:${end}`, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
+  }
+  function quotaPeriods(value) {
+    if (!Array.isArray(value)) return [];
+    return value.slice(0, 104).map((entry) => {
+      const range = cycle(entry);
+      if (!range || entry.id !== range.id) return null;
+      const number = (key) => Number.isFinite(Number(entry[key])) ? Math.max(0, Number(entry[key])) : 0;
+      const totalTokens = Math.round(number('totalTokens'));
+      return { ...range, totalTokens, costUsd: number('costUsd'),
+        inputTokens: Math.round(number('inputTokens')), outputTokens: Math.round(number('outputTokens')),
+        cacheReadTokens: Math.round(number('cacheReadTokens')), unpricedTokens: Math.min(totalTokens, Math.round(number('unpricedTokens'))),
+        status: entry.status === 'complete' ? 'complete' : 'partial',
+        updatedAt: Number.isFinite(Date.parse(entry.updatedAt)) ? new Date(entry.updatedAt).toISOString() : '',
+        missingSources: Math.round(number('missingSources')) };
+    }).filter(Boolean);
+  }
+  function sum(periods) {
+    const out = { totalTokens: 0, costUsd: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, unpricedTokens: 0, status: 'complete' };
+    for (const period of periods) {
+      for (const field of Object.keys(out)) if (field !== 'status') out[field] += Number(period?.[field] || 0);
+      if (period?.status !== 'complete') out.status = 'partial';
+    }
+    if (!periods.length || periods.every((period) => period?.status === 'unavailable')) out.status = 'unavailable';
+    return out;
+  }
+  function snapshot(stats, period = 'cycle', selectedCycleId = '') {
+    const configuration = stats?.duo || {};
+    const current = selectedCycleId ? (configuration.cycles || []).find((item) => item.id === selectedCycleId) : configuration.cycle;
+    const devices = (stats?.devices || []).map((device) => {
+      let usage;
+      if (period === 'cycle') usage = (device.quotaPeriods || []).find((item) => item.id === current?.id);
+      else {
+        const raw = device.periods?.[period];
+        const totalTokens = Number(raw?.clients?.codex || 0);
+        usage = raw ? { totalTokens, costUsd: Number(raw.clientCosts?.codex || 0),
+          inputTokens: Math.max(0, totalTokens - Number(raw.clientCacheReads?.codex || 0) - Number(raw.clientOutputs?.codex || 0)),
+          outputTokens: Number(raw.clientOutputs?.codex || 0), cacheReadTokens: Number(raw.clientCacheReads?.codex || 0),
+          unpricedTokens: Number(raw.clientUnpricedTokens?.codex || 0), status: 'complete', updatedAt: device.updatedAt } : null;
+      }
+      return { ...device, memberId: device.memberId || '', memberName: device.memberName || '未分组',
+        usage: usage || { ...sum([]), status: 'unavailable' } };
+    });
+    const groups = new Map();
+    for (const device of devices) {
+      const key = device.memberId || `unassigned:${device.deviceId}`;
+      if (!groups.has(key)) groups.set(key, { id: key, name: device.memberName, devices: [] });
+      groups.get(key).devices.push(device);
+    }
+    const members = [...groups.values()].map((member) => ({ ...member, usage: sum(member.devices.map((device) => device.usage)) }));
+    return { cycle: current || null, devices, members, total: sum(devices.map((device) => device.usage)),
+      expired: period === 'cycle' && current && Date.now() >= Date.parse(current.end) && !selectedCycleId };
+  }
+  return { WEEK_MS, username, usernameKey, csvCell, cycle, quotaPeriods, snapshot, sum };
+});

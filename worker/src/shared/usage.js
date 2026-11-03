@@ -3,6 +3,7 @@
 
 'use strict';
 
+const duo = require('./duo');
 const { isSessionActivityClient } = require('./sessionActivityProviders');
 
 const PERIODS = ['today', 'month', 'allTime'];
@@ -1405,6 +1406,10 @@ function normalizeDeviceRecord(record) {
     periods: {},
     limits: normalizeLimitsSummary(record.limits)
   };
+  if (hasOwn(record, 'quotaPeriods')) normalized.quotaPeriods = duo.quotaPeriods(record.quotaPeriods);
+  if (hasOwn(record, 'memberId')) normalized.memberId = String(record.memberId || '').slice(0, 80);
+  if (hasOwn(record, 'displayName')) normalized.displayName = duo.username(record.displayName);
+  if (hasOwn(record, 'memberName')) normalized.memberName = duo.username(record.memberName);
   if (hasOwn(record, 'osName')) normalized.osName = normalizeDeviceOsName(record.osName);
   if (hasOwn(record, 'deviceKind')) normalized.deviceKind = normalizeDeviceKind(record.deviceKind);
   if (hasOwn(record, 'osVersion')) normalized.osVersion = normalizeDeviceOsVersion(record.osVersion);
@@ -1665,6 +1670,9 @@ function mergeDeviceRecord(existing, incoming) {
       normalizedIncoming.osName = normalizedExisting.osName;
     }
   }
+  for (const key of ['quotaPeriods', 'memberId', 'memberName', 'displayName']) {
+    if (!hasOwn(incoming, key) && hasOwn(normalizedExisting, key)) normalizedIncoming[key] = normalizedExisting[key];
+  }
   if (!hasIncomingLimits) normalizedIncoming.limits = normalizedExisting.limits;
   else normalizedIncoming.limits = mergeDeviceLimits(normalizedExisting, normalizedIncoming);
   if (!hasIncomingHistory && hasOwn(normalizedExisting, 'history')) normalizedIncoming.history = normalizedExisting.history;
@@ -1920,6 +1928,9 @@ function aggregateDevices(devices, staleAfterMs, nowMs = Date.now(), options = {
     const stale = Number.isFinite(ageMs) && deviceStaleAfterMs > 0 ? ageMs > deviceStaleAfterMs : false;
     aggregate.devices.push({
       deviceId: normalized.deviceId,
+      ...(hasOwn(normalized, 'quotaPeriods') ? { quotaPeriods: normalized.quotaPeriods } : {}),
+      ...(hasOwn(normalized, 'memberId') ? { memberId: normalized.memberId, memberName: normalized.memberName } : {}),
+      ...(normalized.displayName ? { displayName: normalized.displayName } : {}),
       hostname: normalized.hostname,
       ...(hasOwn(normalized, 'deviceKind') ? { deviceKind: normalized.deviceKind } : {}),
       platform: normalized.platform,

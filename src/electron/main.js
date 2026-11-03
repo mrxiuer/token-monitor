@@ -1,6 +1,8 @@
 'use strict';
 
 const fs = require('node:fs');
+const { duoSettings, normalizedDuoPatch } = require('./duoSettings');
+let applyDuoCycles = null;
 const crypto = require('node:crypto');
 const os = require('node:os');
 const path = require('node:path');
@@ -558,7 +560,7 @@ const SMART_COLLECTION_INTERVAL_MS = 10 * 60 * 1000;
 const DEFAULT_COLLECTION_INTERVAL_MS = 5 * 60 * 1000;
 const HUB_DEFAULT_PORT = 17321;
 const KNOWN_CLIENT_LIST = KNOWN_CLIENTS.split(',').map((id) => ({ id }));
-const DEFAULT_VIEW_LIST = ['home', 'limits', 'tool', 'model', 'project', 'session', 'device', 'trends', 'status'].map((id) => ({ id }));
+const DEFAULT_VIEW_LIST = ['member', 'home', 'limits', 'tool', 'model', 'project', 'session', 'device', 'trends', 'status'].map((id) => ({ id }));
 const DEFAULT_HOME_MODULE_LIST = ['limits', 'tool', 'model', 'session', 'device', 'trends'].map((id) => ({ id }));
 const TRAY_OPEN_VIEW_IDS = new Set(['home', 'project', 'session', 'limits', 'trends', 'status']);
 
@@ -2881,12 +2883,12 @@ function readSettings() {
     }
     migrateLegacyMimoCredentialFiles(merged.mimoManagedAccounts);
     Object.assign(merged, normalizeTrayModeSettings(merged));
-    return normalizeWindowBehaviorSettings(merged);
+    return duoSettings(normalizeWindowBehaviorSettings(merged));
   }
   catch (_error) {
     const defaults = defaultSettings();
     Object.assign(defaults, normalizeTrayModeSettings(defaults));
-    return normalizeWindowBehaviorSettings(defaults);
+    return duoSettings(normalizeWindowBehaviorSettings(defaults));
   }
 }
 
@@ -3346,6 +3348,17 @@ function clearLatestHubStatsCache() {
 
 function setLatestHubStatsCache(stats, source, generation, identity) {
   latestHubStats = stats;
+  if (stats?.duo && !settings.duoJoinPending) {
+    const memberId = stats.duo.bindings?.[settings.deviceId];
+    const member = stats.duo.members?.find((item) => item.id === memberId);
+    if (member && (settings.duoUsername !== member.name || settings.duoMemberId !== memberId)) {
+      settings.duoUsername = member.name; settings.duoMemberId = memberId; saveSettings();
+    }
+  }
+  const cycles = stats?.duo?.cycles?.slice(-104);
+  if (Array.isArray(cycles) && JSON.stringify(cycles) !== JSON.stringify(settings.duoCycles || [])) {
+    applyDuoCycles?.(cycles);
+  }
   latestHubStatsReceivedAt = new Date().toISOString();
   latestHubStatsSource = source;
   latestHubStatsGeneration = generation;
@@ -3683,6 +3696,9 @@ async function deleteDeviceFromCurrentSync(deviceId) {
 }
 
 async function postToHub(summary) {
+  summary = { ...summary,
+    ...((settings.duoJoinPending || !settings.duoMemberId) ? { username: settings.duoUsername || '' } : {}),
+    displayName: settings.duoDeviceName || '' };
   const { url: hubUrl, secret } = effectiveHubConfig();
   const uploadIdentity = getSyncContentRuntime().status().identity;
   const uploadContext = syncContentContext();
@@ -3717,7 +3733,9 @@ async function postToHub(summary) {
     settings.lastPostedDeviceId = summary.deviceId;
     saveSettings();
   }
-  return response.json();
+  const result = await response.json();
+  if (result.member) { settings.duoMemberId = result.member.id; settings.duoJoinPending = false; saveSettings(); }
+  return result;
 }
 
 let syncContentRuntime = null;
@@ -7103,7 +7121,7 @@ function configureNativeAppUpdater() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   if (process.platform === 'win32' && appUpdateInstallSupport({
-    isPackaged: app.isPackaged, platform: process.platform, env: process.env
+    isPackaged: app.isPackaged, platform: process.platform, env: process.env, manualOnly: true
   }).supported) {
     // Keep NSIS updates in the running installation even if its registry records
     // are missing. NsisUpdater forwards this through the installer's /D= option.
@@ -7200,7 +7218,7 @@ function deriveAppUpdateState() {
   const currentVersion = app.getVersion();
   const latest = latestForCurrentVersion(block.lastKnownLatest || null, currentVersion);
   const dismissedVersion = block.dismissedVersion || null;
-  const installSupport = appUpdateInstallSupport({ isPackaged: app.isPackaged, platform: process.platform, env: process.env });
+  const installSupport = appUpdateInstallSupport({ isPackaged: app.isPackaged, platform: process.platform, env: process.env, manualOnly: true });
   const availability = deriveAppUpdateAvailability({
     currentVersion,
     latest,
@@ -7389,7 +7407,7 @@ function dismissAppUpdateVersion(version) {
 }
 
 async function downloadAndPrepareAppUpdate() {
-  const support = appUpdateInstallSupport({ isPackaged: app.isPackaged, platform: process.platform, env: process.env });
+  const support = appUpdateInstallSupport({ isPackaged: app.isPackaged, platform: process.platform, env: process.env, manualOnly: true });
   if (!support.supported) {
     setNativeAppUpdateState({ phase: 'error', error: support.reason || 'unsupported-platform', progress: null });
     return deriveAppUpdateState();
@@ -7505,6 +7523,7 @@ function isAllowedExternalUrl(value) {
   if (isAllowedCodexLoginUrl(value)) return true;
   if (parsed.hostname === 'github.com' && parsed.pathname.startsWith('/junhoyeo/tokscale')) return true;
   if (parsed.hostname === 'www.npmjs.com' && parsed.pathname.startsWith('/package/@tokscale/')) return true;
+  if (parsed.hostname === 'github.com' && parsed.pathname.startsWith('/mrxiuer/token-monitor')) return true;
   if (parsed.hostname === 'github.com' && parsed.pathname.startsWith('/Javis603/token-monitor')) return true;
   if (parsed.hostname === 'codex-resets.com' && (parsed.pathname === '' || parsed.pathname === '/')) return true;
   if (
@@ -8078,6 +8097,19 @@ app.whenReady().then(() => {
     applySettingsPatch: applyCredentialSettingsPatch,
     probeDeps: credentialProbeDeps
   });
+  applyDuoCycles = (cycles) => applySettingsPatch({ duoCycles: cycles });
+  ipcMain.handle('duo:configure', async (_event, payload) => {
+    const { url, secret } = effectiveHubConfig();
+    if (!url) throw new Error('请先连接 Hub');
+    const response = await fetch(`${url.replace(/\/$/, '')}/api/duo`, { method: 'PUT', redirect: 'error',
+      headers: { 'content-type': 'application/json', ...(secret ? { authorization: `Bearer ${secret}` } : {}) },
+      body: JSON.stringify(payload), signal: AbortSignal.timeout(15000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || '周期设置未保存');
+    if (url !== effectiveHubConfig().url) throw new Error('hub_changed');
+    if (result.cycles) applyDuoCycles(result.cycles);
+    return result;
+  });
   // Resolves only once a worker-hosted transform runs with the saved settings:
   // pausing the session archive must not be reported done while the worker can
   // still capture under the old value.
@@ -8117,6 +8149,8 @@ app.whenReady().then(() => {
   // The settings:update body, named so a credential save persists through the
   // exact same normalization, runtime reconfigure and limit invalidation.
   function applySettingsPatch(patch, onDotsVisibilityRefresh = () => {}, limitContext = {}) {
+    patch = normalizedDuoPatch(patch);
+    if (patch.duoUsername !== undefined && patch.duoUsername !== settings.duoUsername) patch.duoJoinPending = true;
     const skinSelection = preparePluginSkinSettings(patch, settings, pluginRuntime);
     patch = skinSelection.patch;
     const contentRuntime = getSyncContentRuntime();

@@ -20,6 +20,14 @@ Device collection, transforms and archives live in `src/shared/usage/`. The neig
 
 Cloudflare deployment isolates `worker/` into its own repository. Its portable closure, `WORKER_SHARED_MODULES` in `scripts/hub-build-manifest.js`, must not import Node built-ins or anything above `worker/`. Edit the originals in `src/shared/`, then run `npm run sync:worker`; the mirrored `worker/src/shared/` files are generated and CI rejects drift.
 
+## Personal Codex edition
+
+`shared/duoHub.js` owns Node Hub member identities, device bindings and the pinned Pro quota-cycle source, in the existing device store's `duo` document. `shared/duo.js` owns portable range/summary normalization and member projection; its Worker copy preserves wire compatibility but does not add a Worker member service. Configuration snapshots are copied before publication so later member edits cannot mutate an SSE delta baseline.
+
+`shared/duoCollector.js` is an additive collector pass for explicitly configured cycles. Native request counters and timestamped local Dots ledger rows are the accounting sources; daily totals or proportional session costs never reconstruct cycle boundaries. Native counters deduplicate archive copies, retained numeric observations survive log removal, and incomplete prefixes/gaps stay incomplete. Standard WSL homes reuse existing discovery and are refreshed only with full/WSL scans. A single shared Pro source chooses ranges, while every device's collected Codex usage is counted without account attribution. Prices come from the existing bounded catalog lookup/cache.
+
+`electron/duoSettings.js` performs one-time default migration without changing native glass or historical identities. `renderer/duoView.js` projects member/device rows through the original shell, and `duo.css` only adjusts controls and added content. Updates use the fork's release source and manual installation. The [edition guide](duo.md) documents supported sources, persistence and incomplete coverage; [API](API.md#duo-members-and-quota-cycles) defines the additive Node wire contract.
+
 ## Desktop plugins
 
 `electron/plugins/runtime.js` owns plugin management, host data routing and native demand; `manager.js` owns revision trust and the shared backend lifecycle. Author UI runs in the existing renderer with context isolation and no Node integration; the optional Node utility process has OS-user authority. Host DTO filtering is not a security boundary against trusted local code. Same-page author JS cannot be independently terminated while preserving its renderer. Native controllers retain rendering, window shells and input geometry; plugins extend content through host outlets. See [execution and UI contracts](plugins/README.md) and [content composition](plugins/author-ui-options.md).

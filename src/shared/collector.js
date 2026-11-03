@@ -1394,6 +1394,13 @@ async function collectUsageOnce(options) {
   });
   // Activity is observed after scans; it must not re-date their accounting
   // snapshot if that read crosses midnight. Observations retain their own clock.
+  if (options.duoEnabled) {
+    try { summary.quotaPeriods = await require('./duoCollector').collectQuotaPeriods({ ...options,
+      wslHasCodex: Number(wslBundle?.allTime?.clients?.codex || 0) > 0,
+      lookupModelPricing: options.lookupModelPricing || lookupModelPricing });
+      activitySummary.quotaPeriods = summary.quotaPeriods;
+    } catch (error) { if (options.logger) options.logger(`cycle collection unavailable: ${error.message}`); }
+  }
   const result = require('./sessionActivityProjection').materializeActivity(activitySummary);
   return result.updatedAt === summary.updatedAt ? result : { ...result, updatedAt: summary.updatedAt };
 }

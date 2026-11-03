@@ -125,6 +125,7 @@ test('usage config fingerprint dedupes raw settings with the same effective runt
 test('every usage structural setting maps to an effective fingerprint change', () => {
   const cases = {
     clients: { clients: 'claude,codex' },
+    duoCycles: { duoCycles: [{ id: 'test-cycle', start: '2026-11-01T00:00:00Z', end: '2026-11-08T00:00:00Z' }] },
     codexDotsEnabled: { codexDotsEnabled: true },
     customScanPaths: { customScanPaths: { claude: [path.resolve('tmp', 'claude-sessions')] } },
     allTimeSince: { allTimeSince: '2025-01-01' },

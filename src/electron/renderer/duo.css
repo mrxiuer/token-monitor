@@ -1,0 +1,44 @@
+/* The original native glass, palette, typography and window shape remain in
+   styles.css. These rules only allocate room for persistent window controls. */
+.shell .title-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 0 1 244px; width: 244px; min-width: 200px; }
+.shell .title-controls .tabs { position: relative; inset: auto; flex: 1; grid-template-columns: repeat(4, 1fr); opacity: 1; transform: none; pointer-events: auto; }
+.shell .title-controls .tab-indicator { width: calc((100% - 12px) / 4); }
+.shell .title-controls .window-actions { position: relative; top: auto; right: auto; width: 28px; flex: 0 0 28px; opacity: 1; transform: none; pointer-events: auto; }
+.shell .actions-hotspot { display: none; }
+.shell .window-actions #pinButton, .shell .window-actions #minButton { display: none; }
+.shell .window-actions #closeButton { width: 28px; }
+.shell .titlebar > div:first-child { flex: 1 1 24px; min-width: 24px; }
+.shell.settings-open .title-controls .tabs { display: none; }
+.shell.settings-open .title-controls .window-actions { width: 114px; flex-basis: 114px; }
+.shell.settings-open .window-actions #pinButton, .shell.settings-open .window-actions #minButton { display: grid; }
+.duo-panel { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.duo-panel[hidden] { display: none; }
+.duo-period-info { margin: 0 0 12px; }
+.duo-period-label { font-size: .72rem; color: var(--text); }
+.duo-note { font-size: .65rem; line-height: 1.6; color: var(--muted); overflow-wrap: anywhere; }
+.duo-period-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.duo-period-actions select { min-width: 0; flex: 1; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(var(--overlay-rgb), var(--control-alpha)); color: var(--text); font: inherit; font-size: .65rem; }
+.duo-period-actions button { flex: 0 0 auto; }
+.duo-period-actions button, .duo-cycle-settings button { padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: rgba(var(--overlay-rgb), var(--control-alpha)); color: var(--text); font: inherit; font-size: .65rem; cursor: pointer; }
+.duo-cycle-settings { padding: 12px; }
+.duo-cycle-settings h3 { margin: 0 0 10px; font-size: .8rem; }
+.duo-cycle-settings select { width: 100%; margin-bottom: 8px; }
+.duo-cycle-settings input { min-width: 0; width: 100%; }
+.duo-advanced > summary { cursor: pointer; padding: 10px 0; font-size: .75rem; }
+.duo-row { border-bottom: 1px solid var(--line); padding: 9px 0 12px; }
+.duo-row-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 10px; cursor: pointer; list-style: none; }
+.duo-row-head::-webkit-details-marker { display: none; }
+.duo-row-title { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.duo-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .86rem; font-weight: 600; }
+.duo-row-values { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.duo-row-values strong { font-weight: 500; font-size: .9rem; }
+.duo-row-cost { color: var(--muted); font-size: .7rem; }
+.duo-row-bar { grid-column: 1 / -1; height: 4px; overflow: hidden; border-radius: 4px; background: rgba(var(--overlay-rgb), .1); margin: 9px 0 0; }
+.duo-row-bar > span { display: block; height: 100%; background: #73bdf5; border-radius: inherit; }
+.duo-row-detail { padding: 9px 0 0; }
+.duo-device-line { display: flex; justify-content: space-between; gap: 10px; font-size: .68rem; padding: 7px 0 2px; }
+.duo-device-line > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.duo-device-line input { max-width: 110px; }
+.duo-member-settings { padding-top: 12px; }
+.settings-subscriptions-group, .settings-plugins-group { display: none !important; }
+@media (max-width: 310px) { .shell .title-controls { min-width: 170px; flex-basis: 200px; } .shell .tabs .tab { font-size: 9px; padding-inline: 2px; } }

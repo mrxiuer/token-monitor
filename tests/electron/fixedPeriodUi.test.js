@@ -9,10 +9,10 @@ const vm = require('node:vm');
 const rendererDir = path.join(__dirname, '..', '..', 'src', 'electron', 'renderer');
 const read = (name) => fs.readFileSync(path.join(rendererDir, name), 'utf8');
 
-test('fixed periods reuse the existing three-slot control', () => {
+test('quota cycle has its own tab beside the original calendar period controls', () => {
   const html = read('index.html');
   const slots = [...html.matchAll(/data-period-slot="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(slots, ['today', 'month', 'allTime']);
+  assert.deepEqual(slots, ['today', 'cycle', 'month', 'allTime']);
   assert.match(html, /id="monthPeriodTab"[^>]*aria-haspopup="menu"[^>]*>MONTH<\/button>/);
   assert.doesNotMatch(html, /id="monthPeriodTab"[^>]*>[^<]*(?:▼|▾|⌄)/);
 });
@@ -65,7 +65,7 @@ test('fixed-period menu follows the glass theme and keeps labels left aligned', 
   assert.match(app, /force: forceFixedPeriodHistory,[\s\S]*?retryFailed: forceFixedPeriodHistory/);
   assert.match(app, /isDerived\(next\) && state\.fixedPeriodHistoryFailed[\s\S]*?warmFixedPeriodHistory\(\{ retryFailed: true, renderOnComplete: true \}\)/);
   assert.match(app, /fixedPeriodHistorySignature !== signature[\s\S]*?\|\| state\.fixedPeriodHistoryBusy\) \{[\s\S]*?void loadFixedPeriodHistory\(\);/);
-  assert.match(boot, /\['today', 'month', 'week', 'last7', 'last30', 'allTime'\]\.includes\(period\)/);
+  assert.match(boot, /\['cycle', 'today', 'month', 'week', 'last7', 'last30', 'allTime'\]\.includes\(period\)/);
   assert.match(app, /function fixedPeriodDevices\(\)/);
   assert.match(app, /devicesForReadySnapshot\(state\.fixedPeriodSnapshot, state\.period\)/);
   assert.match(app, /fixedPeriodSnapshotFromDevices\(state\.period, fixedPeriodSources\(\)/);

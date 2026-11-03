@@ -254,8 +254,9 @@ const LIMIT_CAPABILITY_TAG_KEYS = {
 };
 const deviceAccent = '#73bdf5';
 const deviceStaleColor = '#8c97a7';
-const baseBreakdownOrder = ['tool', 'device', 'model', 'project', 'session'];
+const baseBreakdownOrder = ['member', 'tool', 'device', 'model', 'project', 'session'];
 const VIEW_DISPLAY_OPTIONS = [
+  { id: 'member', labelKey: 'views.member' },
   { id: 'home', labelKey: 'views.home' },
   { id: 'limits', labelKey: 'views.limits' },
   { id: 'tool', labelKey: 'views.tool' },
@@ -266,7 +267,7 @@ const VIEW_DISPLAY_OPTIONS = [
   { id: 'trends', labelKey: 'views.trends' },
   { id: 'status', labelKey: 'views.status' }
 ];
-const viewPeriodValues = new Set(['today', 'month', 'week', 'last7', 'last30', 'allTime']);
+const viewPeriodValues = new Set(['cycle', 'today', 'month', 'week', 'last7', 'last30', 'allTime']);
 const viewBreakdownValues = new Set(['home', ...baseBreakdownOrder, 'status', 'limits', 'trends']);
 const HOME_MODULE_OPTIONS = [
   { id: 'limits', labelKey: 'home.limits', viewId: 'limits' },
@@ -289,6 +290,7 @@ let pluginUpdateCount = 0;
 const VIEW_SWITCHER_LONG_PRESS_MS = 420;
 const VIEW_SWITCHER_HOVER_CLOSE_MS = 160;
 const VIEW_ICON_CLASSES = {
+  member: 'view-icon-device',
   home: 'view-icon-home',
   tool: 'view-icon-tool',
   status: 'view-icon-status',
@@ -306,9 +308,9 @@ const SERVICE_STATUS_PLACEHOLDERS = [
   { id: 'deepseek', label: 'DeepSeek', pageUrl: 'https://status.deepseek.com' }
 ];
 const SERVICE_PROVIDER_OPTIONS = SERVICE_STATUS_PLACEHOLDERS.map((entry) => ({ id: entry.id, label: entry.label }));
-const TOKEN_MONITOR_REPOSITORY_URL = 'https://github.com/Javis603/token-monitor';
-const TOKEN_MONITOR_ISSUES_URL = `${TOKEN_MONITOR_REPOSITORY_URL}/issues/new/choose`;
-const TOKEN_MONITOR_WEBSITE_URL = 'https://javis-ai.com/token-monitor/';
+const TOKEN_MONITOR_REPOSITORY_URL = 'https://github.com/mrxiuer/token-monitor';
+const TOKEN_MONITOR_ISSUES_URL = `${TOKEN_MONITOR_REPOSITORY_URL}/issues/new`;
+const TOKEN_MONITOR_WEBSITE_URL = `${TOKEN_MONITOR_REPOSITORY_URL}#readme`;
 const TOKEN_MONITOR_WSL_SQLITE_GUIDE_URL = `${TOKEN_MONITOR_REPOSITORY_URL}/blob/main/docs/wsl-sqlite-setup.md`;
 const serviceStatusProviderPreferencesApi = window.TokenMonitorServiceStatusProviderPreferences;
 const SETTINGS_SECTION_IDS = ['general', 'main', 'window', 'appearance', 'tools', 'limits', 'subscriptions', 'sync', 'plugins'];
@@ -477,6 +479,8 @@ Object.assign(els, {
   icloudRootStatus: document.getElementById('icloudRootStatus'),
   hubBuildStatus: document.getElementById('hubBuildStatus'),
   hubClientFields: document.getElementById('hubClientFields'),
+  duoUsernameInput: document.getElementById('duoUsernameInput'),
+  duoDeviceNameInput: document.getElementById('duoDeviceNameInput'),
   syncConnectionEditor: document.getElementById('syncConnectionEditor'),
   syncConnectionIdentity: document.getElementById('syncConnectionIdentity'),
   syncConnectionEndpoint: document.getElementById('syncConnectionEndpoint'),
@@ -3436,6 +3440,7 @@ function projectRowsForPeriod(period) {
 }
 
 function rowsForPeriod(period) {
+  if (state.breakdown === 'member') return [];
   if (state.breakdown === 'device') return deviceRowsForPeriod();
   if (state.breakdown === 'model') return modelRowsForPeriod(period);
   if (state.breakdown === 'session') return sessionRowsForPeriod(period);
@@ -7643,6 +7648,8 @@ function renderAppContent() {
   allTimeSessions.ensure();
   stopHomeSessionRepaint();
   stopSessionStatusRepaint();
+  window.dispatchEvent(new Event('duo:stats'));
+  if (window.TokenMonitorDuoView.render({ state, els, formatCost, formatNumber, setTotalCost, renderViewSwitcher, signalContentReady })) return;
   els.toolDetailFooter.classList.add('hidden');
   els.projectBreakdownFooter.classList.add('hidden');
   syncLiveTokenRateFooterState();
@@ -9603,13 +9610,15 @@ const HUB_DRAFT_FIELDS = [
   ['hubUrl', 'hubUrlInput'],
   ['secret', 'secretInput'],
   ['deviceId', 'deviceIdInput'],
+  ['duoUsername', 'duoUsernameInput'],
+  ['duoDeviceName', 'duoDeviceNameInput'],
   ['hubHostPort', 'hubPortInput']
 ];
 const hubDraftDirty = Object.fromEntries(HUB_DRAFT_FIELDS.map(([field]) => [field, false]));
 const hubDraftRevisions = Object.fromEntries(HUB_DRAFT_FIELDS.map(([field]) => [field, 0]));
 let hubSaveBusy = false;
 let hubSaveInFlightRevisions = null;
-const CLIENT_CONNECTION_FIELDS = ['hubUrl', 'secret', 'deviceId'];
+const CLIENT_CONNECTION_FIELDS = ['hubUrl', 'secret', 'deviceId', 'duoUsername', 'duoDeviceName'];
 let clientConnectionEditing = false;
 let clientConnectionEditRevision = 0;
 let hubSaveError = false;
@@ -9621,7 +9630,7 @@ function clientConnectionHasDraft() {
 function syncHubConnectionUi() {
   if (!els.syncConnectionEditor) return;
   const client = state.settings?.hubMode === 'client';
-  const configured = Boolean(String(state.settings?.hubUrl || '').trim());
+  const configured = Boolean(String(state.settings?.hubUrl || '').trim() && String(state.settings?.duoUsername || '').trim());
   const editing = clientConnectionEditing || clientConnectionHasDraft() || !configured;
   const focusedEditor = els.syncConnectionEditor.contains(document.activeElement)
     || els.syncDeviceSettings.contains(document.activeElement);
@@ -13459,6 +13468,7 @@ async function init() {
     state.settings.startAtLogin = Boolean(state.appInfo.loginItemOpenAtLogin);
   }
   syncSettingsForm();
+  window.TokenMonitorDuoView.installSettings({ state, saveSettings, render, refreshStats });
   diagnosticsPanel?.render();
   publishViewState();
   await refreshHubInfo();
@@ -13651,6 +13661,11 @@ els.settingsButton.addEventListener('click', (event) => {
 });
 els.saveSettingsButton.addEventListener('click', async () => {
   if (hubSaveBusy || !hubDraftHasChanges()) return;
+  if (state.settings?.hubMode === 'client' && !String(els.duoUsernameInput.value || '').trim()) {
+    els.syncConnectionSaveError.hidden = false;
+    els.syncConnectionSaveError.textContent = '请填写用户名，同名设备会自动归组';
+    els.duoUsernameInput.focus(); return;
+  }
   hubSaveBusy = true;
   hubSaveError = false;
   syncHubConnectionUi();

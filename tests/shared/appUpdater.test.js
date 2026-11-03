@@ -54,7 +54,7 @@ test('the automatic downloader stands down once an attempt is spent', () => {
 });
 
 test('source-mode release checks use the public GitHub page instead of the REST API', () => {
-  assert.equal(RELEASES_LATEST_URL, 'https://github.com/Javis603/token-monitor/releases/latest');
+  assert.equal(RELEASES_LATEST_URL, 'https://github.com/mrxiuer/token-monitor/releases/latest');
 });
 
 test('source-mode release checks negotiate public release JSON without authentication', async () => {
@@ -106,6 +106,7 @@ test('parseTag returns null for invalid or empty input', () => {
 });
 
 test('appUpdateInstallSupport only enables packaged auto-updatable targets', () => {
+  assert.deepEqual(appUpdateInstallSupport({ isPackaged: true, platform: 'darwin', manualOnly: true }), { supported: false, reason: 'manual-only' });
   assert.deepEqual(appUpdateInstallSupport({ isPackaged: false, platform: 'darwin' }), { supported: false, reason: 'unpackaged' });
   assert.deepEqual(appUpdateInstallSupport({ isPackaged: true, platform: 'darwin' }), { supported: true, reason: '' });
   assert.deepEqual(appUpdateInstallSupport({ isPackaged: true, platform: 'win32', env: {} }), { supported: true, reason: '' });
@@ -606,13 +607,13 @@ test('extractUpdaterReleaseHistory keeps every release up to the latest, newest 
     releaseNoteHistory: [
       {
         version: '0.71.0',
-        htmlUrl: 'https://github.com/Javis603/token-monitor/releases/tag/v0.71.0',
+        htmlUrl: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.71.0',
         releaseNotes: { en: [{ title: 'Fixed', items: ['Seventy-one.'] }] }
       },
-      { version: '0.70.0', htmlUrl: 'https://github.com/Javis603/token-monitor/releases/tag/v0.70.0' },
+      { version: '0.70.0', htmlUrl: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.70.0' },
       {
         version: '0.69.0',
-        htmlUrl: 'https://github.com/Javis603/token-monitor/releases/tag/v0.69.0',
+        htmlUrl: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.69.0',
         releaseNotes: { en: [{ title: 'Fixed', items: ['Sixty-nine.'] }] }
       }
     ],
@@ -656,15 +657,15 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <h2>What's changed</h2>
 <h3>Added</h3>
 <ul>
-<li><strong>Widget:</strong> ${en[0]} (<a class="issue-link js-issue-link" data-hovercard-type="pull_request" href="https://github.com/Javis603/token-monitor/pull/1050">#1050</a>)</li>
+<li><strong>Widget:</strong> ${en[0]} (<a class="issue-link js-issue-link" data-hovercard-type="pull_request" href="https://github.com/mrxiuer/token-monitor/pull/1050">#1050</a>)</li>
 </ul>
 <h3>Fixed</h3>
 <ul>
-<li><strong>Updater:</strong> ${en[1]} (<a class="issue-link js-issue-link" data-hovercard-type="pull_request" href="https://github.com/Javis603/token-monitor/pull/1047">#1047</a>)</li>
+<li><strong>Updater:</strong> ${en[1]} (<a class="issue-link js-issue-link" data-hovercard-type="pull_request" href="https://github.com/mrxiuer/token-monitor/pull/1047">#1047</a>)</li>
 </ul>
 <h2>Download</h2>
 <ul>
-<li><strong>macOS Apple Silicon</strong> — <a href="https://github.com/Javis603/token-monitor/releases/download/v${version}/Token-Monitor-${version}-arm64.dmg">Token-Monitor-${version}-arm64.dmg</a></li>
+<li><strong>macOS Apple Silicon</strong> — <a href="https://github.com/mrxiuer/token-monitor/releases/download/v${version}/Token-Monitor-${version}-arm64.dmg">Token-Monitor-${version}-arm64.dmg</a></li>
 </ul>
 <details>
 <summary><strong>First launch and other notes</strong></summary>
@@ -675,15 +676,15 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <h2>更新内容</h2>
 <h3>新增</h3>
 <ul>
-<li><strong>小部件：</strong> ${zh[0]} （<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1050">#1050</a>）</li>
+<li><strong>小部件：</strong> ${zh[0]} （<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1050">#1050</a>）</li>
 </ul>
 <h3>修复</h3>
 <ul>
-<li><strong>更新器：</strong> ${zh[1]} （<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1047">#1047</a>）</li>
+<li><strong>更新器：</strong> ${zh[1]} （<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1047">#1047</a>）</li>
 </ul>
 <h2>下载</h2>
 <ul>
-<li><strong>macOS Apple Silicon</strong> — <a href="https://github.com/Javis603/token-monitor/releases/download/v${version}/Token-Monitor-${version}-arm64.dmg">Token-Monitor-${version}-arm64.dmg</a></li>
+<li><strong>macOS Apple Silicon</strong> — <a href="https://github.com/mrxiuer/token-monitor/releases/download/v${version}/Token-Monitor-${version}-arm64.dmg">Token-Monitor-${version}-arm64.dmg</a></li>
 </ul>
 <details>
 <summary><strong>首次启动与其他说明</strong></summary>
@@ -691,11 +692,11 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <p><strong>macOS:</strong> 打开 <code>.dmg</code>，然后将应用拖入“应用程序”。</p>
 </details>
 <details>
-<summary><strong>Full Changelog:</strong> <a href="https://github.com/Javis603/token-monitor/compare/v${version}-prev...v${version}">v${version}-prev...v${version}</a></summary>
+<summary><strong>Full Changelog:</strong> <a href="https://github.com/mrxiuer/token-monitor/compare/v${version}-prev...v${version}">v${version}-prev...v${version}</a></summary>
 <h2>What's Changed</h2>
-<ul><li>* chore: generated pull-request list by @ghost in <a href="https://github.com/Javis603/token-monitor/pull/9999">Javis603/token-monitor#9999</a></li></ul>
+<ul><li>* chore: generated pull-request list by @ghost in <a href="https://github.com/mrxiuer/token-monitor/pull/9999">mrxiuer/token-monitor#9999</a></li></ul>
 <h2>New Contributors</h2>
-<ul><li>* @ghost made their first contribution in <a href="https://github.com/Javis603/token-monitor/pull/9999">Javis603/token-monitor#9999</a></li></ul>
+<ul><li>* @ghost made their first contribution in <a href="https://github.com/mrxiuer/token-monitor/pull/9999">mrxiuer/token-monitor#9999</a></li></ul>
 </details>
 <details>
 <summary>繁體中文 · 한국어 · 日本語</summary>
@@ -704,9 +705,9 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <h2>繁體中文</h2>
 <h2>更新內容</h2>
 <h3>新增</h3>
-<ul><li><strong>小工具：</strong> ${zhTW[0]} （<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1050">#1050</a>）</li></ul>
+<ul><li><strong>小工具：</strong> ${zhTW[0]} （<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1050">#1050</a>）</li></ul>
 <h3>修復</h3>
-<ul><li><strong>更新器：</strong> ${zhTW[1]} （<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1047">#1047</a>）</li></ul>
+<ul><li><strong>更新器：</strong> ${zhTW[1]} （<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1047">#1047</a>）</li></ul>
 <h2>下載</h2>
 <ul><li>安裝程式</li></ul>
 </details>
@@ -715,9 +716,9 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <h2>한국어</h2>
 <h2>업데이트 내용</h2>
 <h3>추가</h3>
-<ul><li><strong>위젯:</strong> ${ko[0]} (<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1050">#1050</a>)</li></ul>
+<ul><li><strong>위젯:</strong> ${ko[0]} (<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1050">#1050</a>)</li></ul>
 <h3>수정</h3>
-<ul><li><strong>업데이터:</strong> ${ko[1]} (<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1047">#1047</a>)</li></ul>
+<ul><li><strong>업데이터:</strong> ${ko[1]} (<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1047">#1047</a>)</li></ul>
 <h2>다운로드</h2>
 <ul><li>설치 프로그램</li></ul>
 </details>
@@ -726,9 +727,9 @@ test('latestFromUpdaterInfo reads every locale from the Atom feed\'s full change
 <h2>日本語</h2>
 <h2>更新内容</h2>
 <h3>追加</h3>
-<ul><li><strong>ウィジェット:</strong> ${ja[0]} (<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1050">#1050</a>)</li></ul>
+<ul><li><strong>ウィジェット:</strong> ${ja[0]} (<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1050">#1050</a>)</li></ul>
 <h3>修正</h3>
-<ul><li><strong>アップデーター:</strong> ${ja[1]} (<a class="issue-link js-issue-link" href="https://github.com/Javis603/token-monitor/pull/1047">#1047</a>)</li></ul>
+<ul><li><strong>アップデーター:</strong> ${ja[1]} (<a class="issue-link js-issue-link" href="https://github.com/mrxiuer/token-monitor/pull/1047">#1047</a>)</li></ul>
 <h2>ダウンロード</h2>
 <ul><li>インストーラー</li></ul>
 </details>
@@ -987,7 +988,7 @@ test('parseLatestReleasePayload returns normalized object for valid payload', ()
   const result = parseLatestReleasePayload({
     tag_name: 'v0.1.3',
     name: 'Token Monitor 0.1.3',
-    html_url: 'https://github.com/Javis603/token-monitor/releases/tag/v0.1.3',
+    html_url: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.1.3',
     published_at: '2026-05-26T12:00:00Z',
     body: `
 ## What's changed
@@ -1002,7 +1003,7 @@ test('parseLatestReleasePayload returns normalized object for valid payload', ()
     version: '0.1.3',
     tag: 'v0.1.3',
     name: 'Token Monitor 0.1.3',
-    htmlUrl: 'https://github.com/Javis603/token-monitor/releases/tag/v0.1.3',
+    htmlUrl: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.1.3',
     publishedAt: '2026-05-26T12:00:00Z',
     releaseNotes: {
       en: [{ title: 'Added', items: ['Release summaries in the app.'] }]
@@ -1013,7 +1014,7 @@ test('parseLatestReleasePayload returns normalized object for valid payload', ()
 test('parseLatestReleasePayload falls back to tag when name is missing', () => {
   const result = parseLatestReleasePayload({
     tag_name: 'v0.1.3',
-    html_url: 'https://github.com/Javis603/token-monitor/releases/tag/v0.1.3'
+    html_url: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.1.3'
   });
   assert.equal(result.name, 'v0.1.3');
   assert.equal(result.publishedAt, '');
@@ -1031,10 +1032,10 @@ test('parseLatestReleasePayload builds a trusted release URL from the validated 
   assert.equal(parseLatestReleasePayload({
     tag_name: 'v0.1.3',
     html_url: 'http://example.com'
-  }).htmlUrl, 'https://github.com/Javis603/token-monitor/releases/tag/v0.1.3');
+  }).htmlUrl, 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.1.3');
   assert.equal(parseLatestReleasePayload({
     tag_name: 'v0.1.3'
-  }).htmlUrl, 'https://github.com/Javis603/token-monitor/releases/tag/v0.1.3');
+  }).htmlUrl, 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.1.3');
 });
 
 test('latestFromUpdaterInfo normalizes provider metadata and release notes', () => {
@@ -1048,7 +1049,7 @@ test('latestFromUpdaterInfo normalizes provider metadata and release notes', () 
     version: '0.40.0',
     tag: 'v0.40.0',
     name: 'Token Monitor 0.40.0',
-    htmlUrl: 'https://github.com/Javis603/token-monitor/releases/tag/v0.40.0',
+    htmlUrl: 'https://github.com/mrxiuer/token-monitor/releases/tag/v0.40.0',
     publishedAt: '2026-08-03T08:00:00Z',
     releaseNotes: { en: [{ title: 'Fixed', items: ['Updater fix.'] }] }
   });

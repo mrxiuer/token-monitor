@@ -1,8 +1,8 @@
 {
   "name": "token-monitor",
   "productName": "Token Monitor",
-  "version": "0.84.1",
-  "description": "Live token & cost widget for Claude Code, Codex & Hermes — local-first, optional multi-device sync.",
+  "version": "0.84.2-duo.1",
+  "description": "Codex usage by member and device, using a shared Pro quota cycle.",
   "main": "src/electron/main.js",
   "scripts": {
     "start": "npm run ensure:tokscale && electron .",
@@ -35,7 +35,9 @@
     "benchmark:hub-bandwidth": "node scripts/benchmark-hub-bandwidth.js",
     "lint": "eslint .",
     "verify": "npm run lint && npm test",
-    "verify:plugins": "electron scripts/test-plugin-trusted.cjs && electron scripts/test-plugin-trusted-runtime.cjs && electron scripts/test-plugin-trusted-app.cjs && electron scripts/test-plugin-trusted-surfaces.cjs"
+    "verify:plugins": "electron scripts/test-plugin-trusted.cjs && electron scripts/test-plugin-trusted-runtime.cjs && electron scripts/test-plugin-trusted-app.cjs && electron scripts/test-plugin-trusted-surfaces.cjs",
+    "dist:duo:mac": "npm run ensure:tokscale -- --platform=darwin-arm64 && electron-builder --config scripts/duo-builder.config.js --mac --arm64 --publish never",
+    "dist:duo:win": "npm run ensure:tokscale -- --platform=win32-x64 && electron-builder --config scripts/duo-builder.config.js --win --x64 --publish never"
   },
   "build": {
     "beforePack": "scripts/build-windows-dock.js",
@@ -130,7 +132,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "Javis603",
+        "owner": "mrxiuer",
         "repo": "token-monitor"
       }
     ]
@@ -154,11 +156,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Javis603/token-monitor.git"
+    "url": "git+https://github.com/mrxiuer/token-monitor.git"
   },
-  "homepage": "https://github.com/Javis603/token-monitor#readme",
+  "homepage": "https://github.com/mrxiuer/token-monitor#readme",
   "bugs": {
-    "url": "https://github.com/Javis603/token-monitor/issues"
+    "url": "https://github.com/mrxiuer/token-monitor/issues"
   },
   "dependencies": {
     "@xhayper/discord-rpc": "^1.5.1",
@@ -186,5 +188,6 @@
   },
   "engines": {
     "node": ">=22.15.0"
-  }
+  },
+  "upstreamVersion": "0.84.1"
 }

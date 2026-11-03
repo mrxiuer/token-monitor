@@ -23,7 +23,7 @@ function readmeTrackedClientIds() {
     // row reaches this map.
     minimax: 'mcode'
   };
-  return fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8')
+  return fs.readFileSync(path.join(rootDir, 'README.upstream.md'), 'utf8')
     .split('\n')
     .filter((line) => line.startsWith('| <img'))
     .filter((line) => line.split('|').map((cell) => cell.trim())[4] === '✅')

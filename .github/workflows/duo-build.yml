@@ -1,0 +1,62 @@
+name: Duo Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['duo/**']
+    tags: ['duo-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: duo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run sync:worker && git diff --exit-code worker/src/shared
+      - run: npm run verify
+
+  build:
+    needs: verify
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-26
+            platform: mac-arm64
+            command: npm run dist:duo:mac
+            files: dist/*.zip
+          - os: windows-latest
+            platform: windows-x64
+            command: npm run dist:duo:win
+            files: dist/*.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Build personal edition
+        run: ${{ matrix.command }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: duo-${{ matrix.platform }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 14
