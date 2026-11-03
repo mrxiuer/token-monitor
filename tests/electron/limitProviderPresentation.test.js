@@ -2139,7 +2139,7 @@ test('Cline exposes its API key through the settings and credential-store patter
 
 test('Copilot env token is documented in env example, not the README overview', () => {
   const envExample = fs.readFileSync(path.join(__dirname, '..', '..', '.env.example'), 'utf8');
-  const readme = fs.readFileSync(path.join(__dirname, '..', '..', 'README.md'), 'utf8');
+  const readme = fs.readFileSync(path.join(__dirname, '..', '..', 'README.upstream.md'), 'utf8');
   const readmeCn = fs.readFileSync(path.join(__dirname, '..', '..', 'README.zh-CN.md'), 'utf8');
   const readmeTw = fs.readFileSync(path.join(__dirname, '..', '..', 'README.zh-TW.md'), 'utf8');
 

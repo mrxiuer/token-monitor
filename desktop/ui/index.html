@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Token Monitor Duo</title><link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header id="titlebar" class="titlebar">
+        <div class="brand" aria-label="Token Monitor Duo">Σ<span id="liveDot" class="live-dot"></span></div>
+        <nav id="periodTabs" class="tabs" aria-label="统计周期">
+          <button data-period="today">DAY</button><button data-period="cycle" class="active" title="当前额度周期">本轮</button><button data-period="month">MONTH</button><button data-period="allTime">TOTAL</button>
+        </nav>
+        <button id="closeButton" class="icon-button" title="收起窗口，后台继续统计" aria-label="收起窗口">×</button>
+      </header>
+
+      <section id="dashboard" class="dashboard">
+        <div class="headline"><div class="eyebrow">TOTAL TOKENS</div><div id="totalTokens" class="total-tokens">—</div><div id="totalCost" class="total-cost">等待本机统计</div></div>
+        <div id="cycleInfo" class="cycle-info"><div id="periodLabel"></div><div id="periodNote" class="note"></div><select id="cycleSelect" aria-label="查看额度周期"></select></div>
+        <details id="pendingPanel" class="pending-panel" hidden><summary id="pendingSummary"></summary><p id="pendingIntervals" class="note"></p><p class="note">这段用量尚未归入前后任一周期，待确认边界后自动重新计算。</p></details>
+        <div id="rows" class="rows"></div>
+        <div id="quotaPanel" class="quota-panel" hidden></div>
+      </section>
+
+      <section id="settingsPanel" class="settings-panel" hidden>
+        <details id="connectionSection" class="settings-group" open>
+          <summary>多设备同步<span id="connectionSummary" class="note">连接到 Hub</span></summary>
+          <div class="settings-content">
+            <label>用户名<input id="username" maxlength="40" placeholder="同一个人的电脑填写相同名字" autocomplete="off" /></label>
+            <label>Hub URL<input id="hubUrl" type="url" placeholder="https://…/token-monitor" spellcheck="false" /></label>
+            <label>密钥<input id="secret" type="password" placeholder="共享 Hub 密钥" autocomplete="off" /></label>
+            <label>设备名称（可选）<input id="deviceName" maxlength="40" placeholder="例如：MacBook Air" /></label>
+            <label>设备 ID<input id="deviceId" maxlength="120" spellcheck="false" /></label>
+            <p class="note">同名设备自动归到同一个成员。设备 ID 必须各自不同；其他 Codex 账号的用量也会计入这台设备。</p>
+          </div>
+        </details>
+        <details class="settings-group">
+          <summary>额度信息</summary>
+          <div class="settings-content"><p id="sourceStatus" class="note"></p><p id="quotaReadStatus" class="note"></p><p class="note">周期由 Hub 根据共享 Pro 的额度信息自动识别。重置边界不明确的用量会单独保留为待确认。</p></div>
+        </details>
+        <details class="settings-group">
+          <summary>窗口与外观</summary>
+          <div class="settings-content">
+            <label class="inline">使用原生玻璃<input id="systemGlass" type="checkbox" /></label>
+            <label>玻璃材质<select id="glassStyle"><option value="hud">磨砂玻璃</option><option value="liquid">Liquid Glass</option><option value="clear">Liquid Glass Clear</option></select></label>
+            <label>主题<select id="theme"><option value="dark">深色</option><option value="light">浅色</option><option value="system">跟随系统</option></select></label>
+            <label>透明度<input id="opacity" type="range" min="0.1" max="1" step="0.01" /></label>
+            <label>缩放<input id="zoom" type="range" min="0.7" max="1.6" step="0.1" /></label>
+            <label class="inline">窗口置顶<input id="alwaysOnTop" type="checkbox" /></label>
+            <button id="minimizeButton">最小化窗口</button>
+          </div>
+        </details>
+        <details class="settings-group">
+          <summary>常规与采集</summary>
+          <div class="settings-content">
+            <label class="inline">登录时启动<input id="startAtLogin" type="checkbox" /></label>
+            <label>显示 / 收起快捷键<input id="shortcut" placeholder="例如：CommandOrControl+Shift+T" spellcheck="false" /></label>
+            <label>Codex 数据目录<input id="codexHome" spellcheck="false" /></label>
+            <label>额外日志目录<textarea id="extraRoots" rows="3" placeholder="每行一个目录"></textarea></label>
+            <p class="note">只读取 Codex 用量日志，不修改登录状态，不上传对话原文。已观察的数字用量会保存在本机；监控前已删除的日志无法恢复。</p>
+          </div>
+        </details>
+        <div class="settings-group about"><span id="version">Token Monitor Duo · Rust</span><div class="about-links"><button data-link="releases">检查下载</button><button data-link="repo">仓库</button><button data-link="issues">反馈</button></div><p class="note">基于 Token Monitor · MIT。定制版采用手动更新。</p></div>
+        <div class="save-row"><button id="saveSettings" class="primary">保存设置</button><button id="cancelSettings">返回统计</button></div>
+      </section>
+
+      <div id="message" class="message" role="status" hidden></div>
+      <footer class="footer">
+        <select id="groupSelect" aria-label="统计视图"><option value="member">成员</option><option value="device">设备</option><option value="quota">共享额度</option></select>
+        <span id="syncStatus" class="sync-status"></span>
+        <div class="footer-actions"><button id="refreshButton" class="icon-button" title="刷新" aria-label="刷新">↻</button><button id="settingsButton" class="icon-button" title="设置" aria-label="设置">⚙</button></div>
+      </footer>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

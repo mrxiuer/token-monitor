@@ -24,33 +24,29 @@ During Node Hub shutdown, new requests are rejected with `503`, `{ "error": "hub
 
 ## Duo members and quota cycles
 
-The personal Codex edition extends the **Node Hub** with authenticated `GET /api/duo` and `PUT /api/duo`. The existing shared Hub secret authorizes every member operation; usernames are grouping labels, not separate accounts or access controls. Worker and iCloud adapters do not implement these configuration endpoints.
+The personal Codex edition extends the **Node Hub** with authenticated `GET /api/duo` and `PUT /api/duo`. The existing shared secret authorizes all operations; usernames group devices and do not provide separate accounts or access control. Worker and iCloud do not implement these configuration endpoints.
 
-Ingest accepts optional `username`, `displayName` and `quotaPeriods`. A nonempty normalized username joins or creates a stable member ID and binds the Device ID to it. Subsequent uploads may omit the username; changing a member name does not change its ID. The Hub's binding is authoritative over uploaded `memberId`/`memberName`. Authenticated stats include decorated device membership and a `duo` configuration snapshot. The ingest response adds `member: { id, name }` for registered devices; legacy unregistered responses remain compatible.
+Ingest accepts optional `username`, `displayName` and `quotaPeriods`. A normalized nonempty username joins or creates a stable member ID and binds the Device ID. Subsequent uploads may omit the username. The Hub binding overrides uploaded `memberId`/`memberName`; authenticated stats decorate each device with membership and include a `duo` snapshot. The ingest response adds `member: { id, name }` for registered devices, preserving legacy unregistered responses.
 
-`quotaPeriods` is an array of up to 104 summaries with ISO `start`/`end`, `id` equal to `${Date.parse(start)}:${Date.parse(end)}`, nonnegative numeric `totalTokens`, `costUsd`, `inputTokens` (exclusive of cache), `outputTokens` (inclusive of reasoning), `cacheReadTokens`, `unpricedTokens`, `missingSources`, ISO `updatedAt`, and `status: "complete" | "partial"`. Unknown fields are dropped. A missing array preserves the previous observation; an explicit zero summary corrects the prior value. Records are exact cycle summaries, not increments to add at ingest.
+`quotaPeriods` contains at most 208 numerical summaries: up to 104 known cycles and 104 pending boundary ranges. Each has ISO `start`/`end`, `id` equal to `${Date.parse(start)}:${Date.parse(end)}`, nonnegative `totalTokens`, `costUsd`, `inputTokens` (exclusive of cache), `outputTokens` (including reasoning), `cacheReadTokens`, `unpricedTokens`, `missingSources`, ISO `updatedAt`, and `status: "complete" | "partial"`. `componentsAvailable` reports classification coverage. Optional `models` maps at most 128 model names to numerical token/cost summaries with `componentsAvailable` and `priceAvailable`; unknown fields are dropped. A missing `quotaPeriods` preserves the previous observation; an explicit zero summary corrects it. Summaries replace observations, not increments to add on ingest.
 
-`GET /api/duo` returns `{ version: 1, members, bindings, cycles, cycle, source, manual }`. `members` contains stable `{ id, name }` entries, `bindings` maps Device IDs to member IDs, and `source` is a pinned `{ deviceId, accountKey }` for Codex Pro. Automatic cycles use the reported primary weekly window, remain pending when no valid next window is available, and retain the latest 104 known ranges. Each range is half-open `[start, end)`.
+Calendar periods may additionally include `duoModels` with the same model schema. They retain standard `clients`, `clientCosts`, `clientModels` and token component fields for old clients. A legacy producer that omits model or component data does not imply zero detail. Native producers stamp `periodWindows` for their local calendar so offline snapshots expire normally.
 
-`PUT /api/duo` accepts exactly one operation and returns the resulting snapshot. Invalid operations return HTTP 400 without persisting partial changes:
+`GET /api/duo` returns `{ version: 2, members, bindings, cycles, cycle, source, manual: false, uncertainRanges, cycleStatus }`. Member entries contain stable `{ id, name }`; bindings map Device IDs to IDs. `source` pins a Codex Pro `accountKey`, or its device when no account key exists. Another device reporting the same account may supply newer observations. Other accounts cannot replace it automatically.
+
+Cycles are half-open `[start, end)`. The automatic tracker uses primary weekly window duration/reset time, fresh quota observations and optional `resetCredits: { availableCount, expirations }`. Initial and scheduled windows use reported bounds. Early reset evidence with an unresolved time creates an `uncertainRanges` entry containing range fields, `status: "pending"`, reason and adjacent-cycle references. The prior cycle ends at the last pre-reset observation and the new cycle starts at the first post-reset observation. Clients summarize the intervening range separately. Later reliable official bounds mark it `resolved` and revise the adjacent cycle IDs. Cycle states are `waiting`, `confirmed`, `checking-reset` or `boundary-pending`; existing ended cycles are retained until a valid successor is observed. The tracker never consumes reset credits.
+
+The native settings UI exposes only this device's username and profile. `PUT /api/duo` retains explicit administrative assignment/rename compatibility, accepting exactly one operation:
 
 ```json
-{ "assign": { "deviceId": "macbook", "username": "Owner" } }
+{ "assign": { "deviceId": "macbook", "username": "Alice" } }
 ```
 
 ```json
 { "rename": { "id": "member-uuid", "name": "New nickname" } }
 ```
 
-```json
-{ "source": { "deviceId": "macbook", "accountKey": "reported-pro-account-key" } }
-```
-
-```json
-{ "manual": { "start": "2026-11-01T12:00:00Z", "end": "2026-11-08T12:00:00Z" } }
-```
-
-Assign requires an existing device; rename rejects an already-used normalized name; source must already be reported as Codex Pro. Manual ranges must be positive and at most 32 days. Selecting a source exits manual mode. Configuration writes persist before broadcasting a complete SSE snapshot. See [the edition guide](duo.md) for observed-only coverage and pricing limitations.
+Assign requires an existing device; rename rejects a normalized name already in use. Manual ranges and source-picking operations are rejected because cycle selection is automatic. Invalid requests return HTTP 400 without partial persistence. Successful writes persist before broadcasting a full SSE snapshot. See the [edition guide](duo.md) for reset-evidence and historical-data limits.
 
 ## `GET /api/health`
 

@@ -337,7 +337,7 @@ test('third-party fallback stays last after named providers across product surfa
   assert.ok(providerContract, 'docs/API.md must document the limits provider contract');
   assert.match(providerContract, /`LIMIT_PROVIDER_CATALOG` in `src\/shared\/limits\/providers\.js`/);
 
-  for (const file of ['README.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
+  for (const file of ['README.upstream.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
     const content = read(file);
     assert.ok(
       content.indexOf('tools-icon/thirdparty.gif') > content.indexOf('tools-icon/ollama.png'),
@@ -347,7 +347,7 @@ test('third-party fallback stays last after named providers across product surfa
 });
 
 test('third-party adapters share one documentation icon and preserve compatibility guidance', () => {
-  for (const file of ['README.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
+  for (const file of ['README.upstream.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
     const content = read(file);
     assert.match(content, /\.github\/assets\/tools-icon\/thirdparty\.gif"/, file);
     assert.doesNotMatch(content, /\.github\/assets\/tools-icon\/newapi\.png"/, file);

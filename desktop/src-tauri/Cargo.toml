@@ -1,0 +1,46 @@
+[package]
+name = "token-monitor-duo"
+version = "0.85.0-rust.1"
+description = "Codex usage by member and shared Pro quota cycle"
+authors = ["Token Monitor contributors"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "token_monitor_duo"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "macos-private-api", "image-png"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+window-vibrancy = "0.8.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["time", "sync", "process", "rt-multi-thread", "macros"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls", "system-proxy"] }
+futures-util = "0.3"
+rusqlite = { version = "0.37", features = ["bundled"] }
+notify = "8"
+walkdir = "2"
+sha2 = "0.10"
+base64 = "0.22"
+uuid = { version = "1", features = ["v4", "serde"] }
+dirs = "6"
+hostname = "0.4"
+unicode-normalization = "0.1"
+zstd = "0.13"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = true
+panic = "abort"

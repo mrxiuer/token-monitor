@@ -29,19 +29,19 @@ jobs:
 
   build:
     needs: verify
-    timeout-minutes: 25
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-26
             platform: mac-arm64
-            command: npm run dist:duo:mac
+            command: npm run desktop:build
             files: dist/*.zip
           - os: windows-latest
             platform: windows-x64
-            command: npm run dist:duo:win
-            files: dist/*.exe
+            command: npm run desktop:build:win
+            files: desktop/src-tauri/target/release/bundle/nsis/*.exe
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -50,10 +50,26 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Build personal edition
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+      - name: Check native desktop
+        run: |
+          cargo fmt --manifest-path desktop/src-tauri/Cargo.toml --check
+          cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked
+          cargo clippy --manifest-path desktop/src-tauri/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Build Rust desktop
         run: ${{ matrix.command }}
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Archive macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p dist
+          version=$(node -p 'require("./package.json").version')
+          ditto -c -k --sequesterRsrc --keepParent "desktop/src-tauri/target/release/bundle/macos/Token Monitor Duo.app" "dist/Token-Monitor-Duo-${version}-mac-arm64.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: duo-${{ matrix.platform }}

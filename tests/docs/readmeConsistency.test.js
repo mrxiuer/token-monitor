@@ -9,10 +9,10 @@ const { LIMIT_PROVIDER_IDS } = require('../../src/shared/limits/providers');
 const rootDir = path.join(__dirname, '..', '..');
 const read = (file) => fs.readFileSync(path.join(rootDir, file), 'utf8');
 
-const localizedReadmes = ['README.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md', 'README.pt-BR.md'];
+const localizedReadmes = ['README.upstream.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md', 'README.pt-BR.md'];
 
 const nativeMacWidgetCopy = {
-  'README.md': '- **Native macOS Widgets** — View token usage and cost, trends, AI tool quota remaining and reset times, activity heatmaps, and breakdowns by tool or model in Small, Medium, and Large layouts on macOS 14+',
+  'README.upstream.md': '- **Native macOS Widgets** — View token usage and cost, trends, AI tool quota remaining and reset times, activity heatmaps, and breakdowns by tool or model in Small, Medium, and Large layouts on macOS 14+',
   'README.zh-TW.md': '- **原生 macOS 小工具**：在 macOS 14+ 上透過小型、中型與大型版面查看 Token 用量與成本、趨勢、各 AI 工具的剩餘額度與重設時間、活動熱圖，以及依工具或模型分類的明細',
   'README.zh-CN.md': '- **原生 macOS 小部件**：在 macOS 14+ 上通过小号、中号和大号布局查看 Token 用量与成本、趋势、各 AI 工具的剩余额度与重置时间、活动热力图，以及按工具或模型分类的明细',
   'README.ja.md': '- **ネイティブ macOS ウィジェット** — macOS 14 以降で、小・中・大サイズのレイアウトにトークン使用量とコスト、推移、AI ツールごとのクォータ残量とリセット時刻、アクティビティヒートマップ、ツール・モデル別の内訳を表示します',
@@ -156,7 +156,7 @@ const supportedToolIdOrder = [
 // Exact counts, not "at least": a floor check would still pass after new tools land, which is
 // the staleness this guards. Reword a claim and the missing match fails loudly on purpose.
 const countClaims = {
-  'README.md': {
+  'README.upstream.md': {
     tools: /across (\d+)\+ AI coding tools/,
     usage: /and (\d+)\+ AI tools/,
     limits: /and (\d+)\+ providers/
@@ -203,8 +203,8 @@ test('configuration reference env keys all exist in .env.example', () => {
 });
 
 test('localized READMEs list the same supported tools', () => {
-  const baselineText = read('README.md');
-  const baseline = supportedToolCounts(baselineText, 'README.md');
+  const baselineText = read('README.upstream.md');
+  const baseline = supportedToolCounts(baselineText, 'README.upstream.md');
   assert.deepEqual(supportedToolNames(baselineText), supportedToolOrder);
   for (const file of localizedReadmes) {
     const text = read(file);
@@ -289,7 +289,7 @@ test('localized READMEs disclose the Devin Desktop agent boundary', () => {
 });
 
 test('limit provider order follows the supported-tools table', () => {
-  const text = read('README.md');
+  const text = read('README.upstream.md');
   const fromReadme = text
     .split('\n')
     .filter((line) => line.startsWith('| <img'))
@@ -320,7 +320,7 @@ test('localized READMEs link to the configuration reference', () => {
 
 test('localized README settings lists keep provider credentials inside AI Tool Limits', () => {
   const mergedSectionCopy = {
-    'README.md': 'AI Tool Limits (provider selection, limits, and credentials)',
+    'README.upstream.md': 'AI Tool Limits (provider selection, limits, and credentials)',
     'README.zh-TW.md': 'AI 工具額度（供應商選擇、額度與憑證）',
     'README.zh-CN.md': 'AI 工具额度（提供方选择、额度与凭据）',
     'README.ja.md': 'AI ツール制限（プロバイダー選択、制限、認証情報）',
@@ -343,7 +343,7 @@ test('configuration reference keeps provider accounts inside AI Tool Limits', ()
 });
 
 test('localized README WSL claims disclose the SQLite agent boundary', () => {
-  const files = ['README.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md', 'README.pt-BR.md'];
+  const files = ['README.upstream.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md', 'README.pt-BR.md'];
 
   for (const file of files) {
     const line = read(file).split('\n').find((value) => value.includes('**WSL')) || '';

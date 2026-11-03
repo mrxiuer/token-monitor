@@ -7,7 +7,7 @@ const test = require('node:test');
 const packageJson = require('../../package.json');
 
 const runtimeScripts = [
-  'start',
+  'start:electron',
   'widget',
   'dev',
   'agent',
@@ -24,7 +24,7 @@ const runtimeScripts = [
   'dist:linux'
 ];
 
-test('runtime and packaging scripts explicitly ensure vendored tokscale', () => {
+test('legacy Electron runtime and packaging scripts explicitly ensure vendored tokscale', () => {
   for (const name of runtimeScripts) {
     assert.match(packageJson.scripts[name], /ensure:tokscale/, name);
   }
@@ -35,7 +35,7 @@ test('runtime and packaging scripts explicitly ensure vendored tokscale', () => 
 });
 
 test('ordinary install-adjacent scripts do not pull the vendored binary', () => {
-  for (const name of ['hub', 'test', 'lint', 'verify', 'build:mac-widget', 'dist:win:prepackaged']) {
+  for (const name of ['hub', 'test', 'lint', 'verify', 'build:mac-widget', 'dist:win:prepackaged', 'start', 'desktop:prepare', 'desktop:dev', 'desktop:build', 'desktop:build:win']) {
     assert.doesNotMatch(packageJson.scripts[name], /ensure:tokscale/, name);
   }
   assert.equal(packageJson.scripts.postinstall, undefined);

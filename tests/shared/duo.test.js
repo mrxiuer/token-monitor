@@ -129,3 +129,12 @@ test('all missing devices stay unavailable and CSV names cannot become formulas'
   assert.equal(duo.csvCell('=HYPERLINK("x")'), '"\'=HYPERLINK(""x"")"');
   assert.equal(duo.csvCell('normal, name'), '"normal, name"');
 });
+test('cycle and calendar model details survive Hub normalization without raw conversation fields', () => {
+  const model = { totalTokens: 12, costUsd: 1.2, inputTokens: 5, outputTokens: 4, cacheReadTokens: 3, unpricedTokens: 0, prompt: 'PRIVATE' };
+  const payload = { deviceId: 'native', quotaPeriods: [{ ...range, totalTokens: 12, models: { 'gpt-test': model } }],
+    today: { totalTokens: 12, clients: { codex: 12 }, duoModels: { 'gpt-test': model } } };
+  const device = aggregateDevices([normalizeDeviceRecord(payload)], 0).devices[0];
+  assert.equal(device.quotaPeriods[0].models['gpt-test'].totalTokens, 12);
+  assert.equal(device.periods.today.duoModels['gpt-test'].costUsd, 1.2);
+  assert.ok(!JSON.stringify(device).includes('PRIVATE'));
+});

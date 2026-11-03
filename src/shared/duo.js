@@ -21,9 +21,25 @@
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || end - start > 32 * 86400000) return null;
     return { id: `${start}:${end}`, start: new Date(start).toISOString(), end: new Date(end).toISOString() };
   }
+  function models(value) {
+    const out = {};
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return out;
+    for (const [raw, entry] of Object.entries(value).slice(0, 128)) {
+      const name = String(raw).trim().slice(0, 200);
+      if (!name || !entry || typeof entry !== 'object') continue;
+      const number = (key) => Number.isFinite(Number(entry[key])) ? Math.max(0, Number(entry[key])) : 0;
+      const item = { totalTokens: Math.round(number('totalTokens')), costUsd: number('costUsd'),
+        inputTokens: Math.round(number('inputTokens')), outputTokens: Math.round(number('outputTokens')),
+        cacheReadTokens: Math.round(number('cacheReadTokens')), unpricedTokens: Math.round(number('unpricedTokens')),
+        componentsAvailable: entry.componentsAvailable !== false && ['inputTokens', 'outputTokens', 'cacheReadTokens'].every((key) => Object.hasOwn(entry, key)),
+        priceAvailable: entry.priceAvailable !== false && Object.hasOwn(entry, 'costUsd') };
+      Object.defineProperty(out, name, { value: item, enumerable: true });
+    }
+    return out;
+  }
   function quotaPeriods(value) {
     if (!Array.isArray(value)) return [];
-    return value.slice(0, 104).map((entry) => {
+    return value.slice(-208).map((entry) => {
       const range = cycle(entry);
       if (!range || entry.id !== range.id) return null;
       const number = (key) => Number.isFinite(Number(entry[key])) ? Math.max(0, Number(entry[key])) : 0;
@@ -33,7 +49,9 @@
         cacheReadTokens: Math.round(number('cacheReadTokens')), unpricedTokens: Math.min(totalTokens, Math.round(number('unpricedTokens'))),
         status: entry.status === 'complete' ? 'complete' : 'partial',
         updatedAt: Number.isFinite(Date.parse(entry.updatedAt)) ? new Date(entry.updatedAt).toISOString() : '',
-        missingSources: Math.round(number('missingSources')) };
+        missingSources: Math.round(number('missingSources')),
+        ...(entry.models ? { models: models(entry.models) } : {}),
+        componentsAvailable: entry.componentsAvailable !== false && ['inputTokens', 'outputTokens', 'cacheReadTokens'].every((key) => Object.hasOwn(entry, key)) };
     }).filter(Boolean);
   }
   function sum(periods) {
@@ -72,5 +90,5 @@
     return { cycle: current || null, devices, members, total: sum(devices.map((device) => device.usage)),
       expired: period === 'cycle' && current && Date.now() >= Date.parse(current.end) && !selectedCycleId };
   }
-  return { WEEK_MS, username, usernameKey, csvCell, cycle, quotaPeriods, snapshot, sum };
+  return { WEEK_MS, username, usernameKey, csvCell, cycle, models, quotaPeriods, snapshot, sum };
 });

@@ -5,13 +5,14 @@ This file provides shared project guidance for coding agents that load it. Read 
 ## Commands
 
 ```bash
-npm start          # launch the Electron widget (= npm run widget / npm run dev)
+npm start          # launch the Rust/Tauri Duo desktop (macOS/Windows)
 npm run hub        # start the Node hub on port 17321
 npm run agent      # start the headless collector→hub agent
 npm run agent:once # one-shot collect+post, then exit (useful for cron/launchd)
 npm test           # run the node:test suite (node --test "tests/**/*.test.js")
 npm run lint       # ESLint flat config (eslint.config.js)
-npm run verify     # lint + test (single local entry point)
+npm run verify     # lint + Node tests
+npm run desktop:test # Rust desktop tests (macOS/Windows)
 ```
 
 Automated verification is `npm run verify`; CI (`.github/workflows/ci.yml`) runs lint + test on push/PR across Node 22 & 24. The toolchain (ESLint 10 + the node:test glob) needs Node 22.13+ and DSH session decoding needs `zlib.zstdDecompressSync` (Node 22.15+), which is why `engines.node` is `>=22.15.0`.

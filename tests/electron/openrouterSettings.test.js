@@ -158,7 +158,7 @@ test('OpenRouter credits lookup keeps the mixed-version label fallback', () => {
 
 test('OpenRouter is documented with its supplied icon in every supported-tools table', () => {
   const row = /\.github\/assets\/tools-icon\/openrouter\.png" width="28" alt="OpenRouter" \/> \| OpenRouter \| OpenRouter API/;
-  for (const file of ['README.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
+  for (const file of ['README.upstream.md', 'README.zh-TW.md', 'README.zh-CN.md', 'README.ja.md', 'README.ko.md']) {
     assert.match(read(file), row, file);
   }
   assert.equal(fs.existsSync(path.join(root, '.github/assets/tools-icon/openrouter.png')), true);

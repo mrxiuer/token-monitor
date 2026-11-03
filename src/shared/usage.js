@@ -1189,6 +1189,7 @@ function normalizePeriod(input, options = {}) {
   ) {
     period.capabilities.tokenComponents = false;
   }
+  if (hasOwn(input, 'duoModels')) period.duoModels = duo.models(input.duoModels);
   return period;
 }
 
