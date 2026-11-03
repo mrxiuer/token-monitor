@@ -153,6 +153,15 @@ fn compact_stats(value: &Value) -> Value {
                     ] {
                         out[field] = p[field].clone();
                     }
+                    // v0.84 clients put the Codex plan in accountLabel.
+                    if out["planLabel"].as_str().unwrap_or("").is_empty() {
+                        out["planLabel"] = json!(p["accountLabel"]
+                            .as_str()
+                            .unwrap_or("")
+                            .chars()
+                            .take(40)
+                            .collect::<String>());
+                    }
                     out
                 })
                 .collect();
@@ -687,6 +696,22 @@ impl Engine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn legacy_codex_plan_remains_visible_after_private_cache_projection() {
+        let compact = compact_stats(
+            &json!({"devices":[{"deviceId":"old-mac","limits":{"providers":[{
+            "provider":"codex","planLabel":"","accountLabel":"Pro 100","accountEmail":"private@example.com","status":"ok"}]}}]}),
+        );
+        let projected = &compact["devices"][0]["limits"]["providers"][0];
+        assert_eq!(projected["planLabel"], "Pro 100");
+        assert!(projected.get("accountEmail").is_none());
+        assert_eq!(
+            model::view(&compact, "cycle", "member", "")
+                .pro_sources
+                .len(),
+            1
+        );
+    }
     #[test]
     fn remote_cache_drops_sessions_and_credentials() {
         let compact = compact_stats(
