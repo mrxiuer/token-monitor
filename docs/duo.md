@@ -27,7 +27,7 @@ Hub 采用有效的 Codex Pro 主周额度窗口并固定共享账号标识；�
 
 ## 数据来源与费用
 
-macOS 与 Windows 使用原生 Rust 采集器，读取当前 `CODEX_HOME` 的 `sessions`、`archived_sessions`，以及设置中明确添加的日志目录。支持 JSONL 和有解压上限的 `.jsonl.zst`。默认 `CODEX_HOME` 为用户目录下 `.codex`。支持范围为这两个系统的原生日志。
+macOS 与 Windows 使用原生 Rust 采集器，读取当前 `CODEX_HOME` 的 `sessions`、`archived_sessions`，以及设置中明确添加的日志目录。以流式方式读取 JSONL 和 `.jsonl.zst`，较大的会话日志也能保留可读取的用量。单条记录超限或源文件损坏时标记为不完整，并尽量保留其前后有效记录。默认 `CODEX_HOME` 为用户目录下 `.codex`。支持范围为这两个系统的原生日志。
 
 会话累计计数计算为逐次增量，原生与归档副本按会话标识和累计计数去重。根据 `token_count` 记录的时间拆分跨周期会话；输入不含缓存读取，输出包含推理 Token。计数回退、历史前缀截断或累计缺口只保留能确定的增量，并标为不完整。日志时间不能证明请求精确执行时间。
 

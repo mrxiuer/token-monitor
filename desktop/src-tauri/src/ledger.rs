@@ -16,8 +16,10 @@ use std::{
 };
 use walkdir::WalkDir;
 
-const MAX_FILE: u64 = 256 * 1024 * 1024;
-const MAX_ZSTD: u64 = 64 * 1024 * 1024;
+const MAX_FILE: u64 = 2 * 1024 * 1024 * 1024;
+const MAX_ZSTD: u64 = 4 * 1024 * 1024 * 1024;
+const MAX_LINE: u64 = 8 * 1024 * 1024;
+const PARSER_REVISION: u8 = 2;
 #[derive(Clone, Debug)]
 pub struct Event {
     pub key: String,
@@ -46,20 +48,36 @@ fn counters(value: &Value) -> Option<[u64; 3]> {
     }
     Some([input, output, cache])
 }
-pub fn parse<R: BufRead>(reader: R, fallback: &str) -> Parsed {
+pub fn parse<R: BufRead>(mut reader: R, fallback: &str) -> Parsed {
     let mut result = Parsed::default();
     let mut native = fallback.to_string();
     let mut model = "unknown".to_string();
     let mut previous: Option<[u64; 3]> = None;
-    for line in reader.lines() {
-        let Ok(line) = line else {
+    let mut line = Vec::new();
+    loop {
+        line.clear();
+        match (&mut reader)
+            .take(MAX_LINE + 1)
+            .read_until(b'\n', &mut line)
+        {
+            Ok(0) => break,
+            Err(_) => {
+                result.partial = true;
+                break;
+            }
+            _ => {}
+        }
+        if line.len() as u64 > MAX_LINE {
             result.partial = true;
-            break;
-        };
-        if line.trim().is_empty() {
+            if line.last() != Some(&b'\n') && reader.skip_until(b'\n').is_err() {
+                break;
+            }
             continue;
         }
-        let Ok(record) = serde_json::from_str::<Value>(&line) else {
+        if line.iter().all(u8::is_ascii_whitespace) {
+            continue;
+        }
+        let Ok(record) = serde_json::from_slice::<Value>(&line) else {
             result.partial = true;
             continue;
         };
@@ -242,7 +260,7 @@ impl Ledger {
                     .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
                     .map(|time| time.as_nanos())
                     .unwrap_or_default();
-                let fingerprint = format!("{}:{stamp}", meta.len());
+                let fingerprint = format!("{PARSER_REVISION}:{}:{stamp}", meta.len());
                 let key = hash(&real.to_string_lossy());
                 let cached = self
                     .connection
@@ -260,21 +278,18 @@ impl Ledger {
                     continue;
                 }
                 let parsed = if name.ends_with(".zst") {
-                    if meta.len() > 32 * 1024 * 1024 {
-                        missing += 1;
-                        continue;
-                    }
-                    let decoded = (|| -> Result<Vec<u8>, std::io::Error> {
+                    let decoded = (|| -> Result<Parsed, std::io::Error> {
                         let mut decoder = zstd::stream::read::Decoder::new(fs::File::open(file)?)?;
                         decoder.window_log_max(26)?;
-                        let mut bytes = Vec::new();
-                        decoder.take(MAX_ZSTD + 1).read_to_end(&mut bytes)?;
-                        Ok(bytes)
+                        let mut limited = decoder.take(MAX_ZSTD + 1);
+                        let mut parsed = parse(BufReader::new(&mut limited), &name);
+                        if limited.limit() == 0 {
+                            parsed.partial = true;
+                        }
+                        Ok(parsed)
                     })();
                     match decoded {
-                        Ok(bytes) if bytes.len() as u64 <= MAX_ZSTD => {
-                            parse(BufReader::new(bytes.as_slice()), &name)
-                        }
+                        Ok(parsed) => parsed,
                         _ => {
                             missing += 1;
                             continue;
@@ -546,6 +561,46 @@ mod tests {
         assert_eq!(ledger.scan(&[logs]).unwrap().0.len(), 1);
         let bytes = fs::read(temp.path().join("db/usage.sqlite")).unwrap();
         assert!(!String::from_utf8_lossy(&bytes).contains("user_message"));
+    }
+    #[test]
+    fn large_plain_logs_keep_usage_on_both_sides_of_an_oversized_record() {
+        use std::io::{Seek, SeekFrom, Write};
+        let temp = tempfile::tempdir().unwrap();
+        let logs = temp.path().join("logs");
+        fs::create_dir(&logs).unwrap();
+        let mut file = fs::File::create(logs.join("large.jsonl")).unwrap();
+        writeln!(file, "{}", usage("2026-11-01T00:00:00Z", 100, 20, 40)).unwrap();
+        file.seek(SeekFrom::Start(260 * 1024 * 1024)).unwrap();
+        writeln!(file, "\n{}", usage("2026-11-01T00:01:00Z", 150, 30, 60)).unwrap();
+        drop(file);
+        let mut ledger = Ledger::open(&temp.path().join("db")).unwrap();
+        let (events, missing) = ledger.scan(&[logs]).unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events.iter().map(Event::total).sum::<u64>(), 180);
+        assert_eq!(missing, 1);
+    }
+    #[test]
+    fn large_zstd_logs_are_streamed_without_discarding_the_entire_session() {
+        use std::io::Write;
+        let temp = tempfile::tempdir().unwrap();
+        let logs = temp.path().join("logs");
+        fs::create_dir(&logs).unwrap();
+        let file = fs::File::create(logs.join("large.jsonl.zst")).unwrap();
+        let mut encoder = zstd::stream::write::Encoder::new(file, 1).unwrap();
+        writeln!(encoder, "{}", usage("2026-11-01T00:00:00Z", 100, 20, 40)).unwrap();
+        let other = format!(
+            "{{\"type\":\"response_item\",\"payload\":\"{}\"}}\n",
+            "a".repeat(1024 * 1024)
+        );
+        for _ in 0..65 {
+            encoder.write_all(other.as_bytes()).unwrap();
+        }
+        writeln!(encoder, "{}", usage("2026-11-01T00:01:00Z", 150, 30, 60)).unwrap();
+        encoder.finish().unwrap();
+        let mut ledger = Ledger::open(&temp.path().join("db")).unwrap();
+        let (events, missing) = ledger.scan(&[logs]).unwrap();
+        assert_eq!(events.iter().map(Event::total).sum::<u64>(), 180);
+        assert_eq!(missing, 0);
     }
     #[test]
     fn pricing_uses_exclusive_input_and_cache_rates() {
